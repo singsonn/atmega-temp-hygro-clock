@@ -1,4 +1,3 @@
-atmega-two-7-segment-counter.elf
-atmega-two-7-segment-counter.hex
-atmega-two-7-segment-counter.o
-atmega-two-7-segment-counter_eeprom.hex
+*.el
+*.hex
+*.o
