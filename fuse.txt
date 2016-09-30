@@ -1,0 +1,1 @@
+avrdude -p m328p -c usbasp-clone -U lfuse:w:0xF7:m -U hfuse:w:0xD9:m -U efuse:w:0xFF:m -U lock:w:0xFF:m
