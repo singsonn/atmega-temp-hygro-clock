@@ -1,1 +1,3 @@
-avrdude -p m328p -c usbasp-clone -U lfuse:w:0xF7:m -U hfuse:w:0xD9:m -U efuse:w:0xFF:m -U lock:w:0xFF:m
+avrdude -p m328p -c usbasp-clone -U lfuse:w:0xF7:m -U hfuse:w:0xD9:m -U efuse:w:0xFF:m -U lock:w:0xFF:m // with crystal external
+avrdude -p m328p -c usbasp-clone -U lfuse:w:0x62:m -U hfuse:w:0xD9:m -U efuse:w:0xFF:m -U lock:w:0xFF:m // default with internal RC oscillator 8mhz divided internally by 8
+avrdude -p m328p -c usbasp-clone -U lfuse:w:0xE2:m -U hfuse:w:0xD9:m -U efuse:w:0xFF:m -U lock:w:0xFF:m // with internal RC oscillator 8mhz

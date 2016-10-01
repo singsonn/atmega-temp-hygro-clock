@@ -1,4 +1,4 @@
-#define F_CPU 20000000UL // speed on mcu crystal (20Mhz)
+#define F_CPU 8000000UL // speed on mcu crystal (20Mhz)
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
@@ -12,14 +12,28 @@ void ports_init(void);
 void interrupts_init(void);
 void timer_init(void);
 void display_toggle(uint8_t toggle_bit);
+void display_function(void);
+
+volatile uint8_t tot_overflow;
 
 volatile uint8_t toggle = 0;
+
+volatile uint8_t value_displayed = 0; // 0 = temperature, 1 = humidity, 2 = time (hour:minutes), 3 = date (day.month), 4 = year
+
 volatile uint8_t dp_off = 0;
 volatile uint8_t dp_on = 1;
 
+volatile uint8_t zero = 0;
 volatile uint8_t one = 1;
 volatile uint8_t two = 2;
 volatile uint8_t three = 3;
+volatile uint8_t four = 4;
+volatile uint8_t five = 5;
+volatile uint8_t six = 6;
+volatile uint8_t seven = 7;
+volatile uint8_t eight = 8;
+volatile uint8_t nine = 9;
+volatile uint8_t c = 10;
 volatile uint8_t h = 11;
 
 int main(void) { // main program
@@ -30,37 +44,22 @@ int main(void) { // main program
 
   sei(); // Enable global interrupts
 
-  while(1){
+  while(1){ // loop forever
   }
 }
 
 //Interrupt Service Routine for INT1 : Toggle between functions (show temperature, humidity, time, date, year)
 ISR(INT1_vect) {
+  value_displayed++;
+  if (value_displayed == 5){
+    value_displayed = 0;
+  }
 }
 
-ISR(TIMER1_OVF_vect){
-  if (toggle == 0){ // All Displays off
-    display_toggle(toggle);
-    toggle = 1;
-  }else if (toggle == 1){ // Display 1 (most left) ON
-    display_toggle(toggle);
-    display_digit(one,dp_off);
-    toggle = 2;
-  }else if (toggle == 2){ // Display 2 (middle left) ON
-    display_toggle(toggle);
-    display_digit(two,dp_on);
-    toggle = 3;
-  }else if (toggle == 3){ // Display 3 (middle right) ON
-    display_toggle(toggle);
-    display_digit(three,dp_off);
-    toggle = 4;
-  }else if (toggle == 4){ // Display 4 (most right) ON
-    display_toggle(toggle);
-    display_digit(h,dp_on);
-    toggle = 1;
-  }else{ // If toggle is not equal any of 0,1,2,3,4, then make it equal to 0
-    toggle = 0;
-  }
+//ISR(TIMER1_OVF_vect){
+ISR(TIMER1_COMPA_vect){
+//  tot_overflow++;
+  display_function();
 }
 
 void display_digit(uint8_t digit, uint8_t decimal_point_bit) {
@@ -171,9 +170,12 @@ void interrupts_init(void){
 }
 
 void timer_init(void){
-  TCCR1B |= (1 << CS10); // Set up timer with prescaler Fcpu/8
-  TCNT1 = 10; // Initialize Timer 1 counter at 0
-  TIMSK1 |= (1 << TOIE1); // Enable overflow interrupt
+  TCCR1B |= (1 << CS10) | (1 << WGM12);
+  OCR1A = 15000;
+  TIMSK1 |= (1 << OCIE1A);
+//  TCCR1B |= (1 << CS10); // Set up timer with prescaler Fcpu/1 (no prescaler)
+  TCNT1 = 0; // Initialize Timer 1 counter at 0
+//  TIMSK1 |= (1 << TOIE1); // Enable overflow interrupt
 }
 
 void display_toggle(uint8_t toggle_bit){
@@ -205,5 +207,30 @@ void display_toggle(uint8_t toggle_bit){
       PORTB &= ~(1<<PB0);
       PORTD &= ~((1<<PD5) | (1<<PD6) | (1<<PD7));
       break;
+  }
+}
+
+void display_function(void){
+  if (toggle == 0){ // All Displays off
+    display_toggle(toggle);
+    toggle = 1;
+  }else if (toggle == 1){ // Display 1 (most left) ON
+    display_toggle(toggle);
+    display_digit(one,dp_off);
+    toggle = 2;
+  }else if (toggle == 2){ // Display 2 (middle left) ON
+    display_toggle(toggle);
+    display_digit(two,dp_on);
+    toggle = 3;
+  }else if (toggle == 3){ // Display 3 (middle right) ON
+    display_toggle(toggle);
+    display_digit(three,dp_off);
+    toggle = 4;
+  }else if (toggle == 4){ // Display 4 (most right) ON
+    display_toggle(toggle);
+    display_digit(h,dp_off);
+    toggle = 1;
+  }else{ // If toggle is not equal any of 0,1,2,3,4, then make it equal to 0
+    toggle = 0;
   }
 }
