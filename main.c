@@ -211,6 +211,18 @@ void display_digit(uint8_t digit, uint8_t decimal_point_bit) {
       PORTC &= ~((1<<PC0) | (1<<PC3));
       PORTD |= (1<<PD4);
       break;
+    case 12: // Display char "E"
+      PORTB |= (1<<PB1) | (1<<PB2);
+      PORTC |= (1<<PC0) | (1<<PC3);
+      PORTC &= ~((1<<PC1) | (1<<PC2));
+      PORTD |= (1<<PD4);
+      break;
+    case 13: // Display char "F"
+      PORTB |= (1<<PB1) | (1<<PB2);
+      PORTC |= (1<<PC0) | (1<<PC3);
+      PORTC &= ~((1<<PC1) | (1<<PC2));
+      PORTD &= ~(1<<PD4);
+      break;
     default: // Display Number 8
       PORTB |= (1<<PB1) | (1<<PB2);
       PORTC |= (1<<PC0) | (1<<PC1) | (1<<PC2) | (1<<PC3);
