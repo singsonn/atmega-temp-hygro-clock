@@ -14,8 +14,8 @@ void interrupts_init(void);
 void timer_init(void);
 void display_toggle(uint8_t toggle_bit);
 void display_function(void);
-void temperature_reading(void);
-void humidity_reading(void);
+void dht_reading_func(void);
+//void humidity_reading(void);
 
 volatile uint8_t tot_overflow;
 
@@ -29,10 +29,25 @@ volatile uint8_t dp_value_two = 0;
 volatile uint8_t dp_value_three = 0;
 volatile uint8_t dp_value_four = 0;
 
+volatile uint8_t dp_dht_value_one = 0;
+volatile uint8_t dp_dht_value_two = 0;
+volatile uint8_t dp_dht_value_three = 0;
+volatile uint8_t dp_dht_value_four = 0;
+
 volatile uint8_t one = 0;
 volatile uint8_t two = 0;
 volatile uint8_t three = 0;
 volatile uint8_t four = 0;
+
+volatile uint8_t dht_temp_one = 0;
+volatile uint8_t dht_temp_two = 0;
+volatile uint8_t dht_temp_three = 0;
+volatile uint8_t dht_temp_four = 0;
+
+volatile uint8_t dht_humidity_one = 0;
+volatile uint8_t dht_humidity_two = 0;
+volatile uint8_t dht_humidity_three = 0;
+volatile uint8_t dht_humidity_four = 0;
 
 //c = 10;
 //h = 11;
@@ -52,7 +67,15 @@ int main(void) { // main program
   while(1){ // loop forever
     if (value_displayed == 0){ // Display temperature
       if (dht_reading == 0){
-        temperature_reading();
+        one = dht_temp_one;
+        two = dht_temp_two;
+        three = dht_temp_three;
+        four = dht_temp_four;
+        dp_value_one = dp_dht_value_one;
+        dp_value_two = dp_dht_value_two;
+        dp_value_three = dp_dht_value_three;
+        dp_value_four = dp_dht_value_four;
+        dht_reading_func();
       }
       dht_reading = 1;
       if (dht_reading >= 1){
@@ -61,7 +84,15 @@ int main(void) { // main program
       }
     }else if (value_displayed == 1){ // Display humidity
       if (dht_reading == 0){
-        humidity_reading();
+        one = dht_humidity_one;
+        two = dht_humidity_two;
+        three = dht_humidity_three;
+        four = dht_humidity_four;
+        dp_value_one = dp_dht_value_one;
+        dp_value_two = dp_dht_value_two;
+        dp_value_three = dp_dht_value_three;
+        dp_value_four = dp_dht_value_four;
+        dht_reading_func();
       }
       dht_reading = 1;
       if (dht_reading >= 1){
@@ -268,7 +299,7 @@ void display_function(void){
   }
 }
 
-void temperature_reading(void){
+void dht_reading_func(void){
   DHT22_STATE_t state;
   DHT22_DATA_t sensor_data;
   state = DHT22_StartReading();
@@ -279,14 +310,18 @@ void temperature_reading(void){
      // sensor_data.temperature_decimal
      // sensor_data.humidity_integral
      // sensor_data.humidity_decimal
-     one = sensor_data.temperature_integral / 10;
-     two = sensor_data.temperature_integral % 10;
-     three = sensor_data.temperature_decimal;
-     four = 10;
-     dp_value_one = 0;
-     dp_value_two = 1;
-     dp_value_three = 0;
-     dp_value_four = 0;
+     dht_temp_one = sensor_data.temperature_integral / 10;
+     dht_temp_two = sensor_data.temperature_integral % 10;
+     dht_temp_three = sensor_data.temperature_decimal;
+     dht_temp_four = 10;
+     dht_humidity_one = sensor_data.humidity_integral / 10;
+     dht_humidity_two = sensor_data.humidity_integral % 10;
+     dht_humidity_three = sensor_data.humidity_decimal;
+     dht_humidity_four = 11;
+     dp_dht_value_one = 0;
+     dp_dht_value_two = 1;
+     dp_dht_value_three = 0;
+     dp_dht_value_four = 0;
      }
   else if (state == DHT_ERROR_CHECKSUM){
      // Do something if there is a Checksum error
@@ -298,50 +333,6 @@ void temperature_reading(void){
 //     dp_value_two = 1;
 //     dp_value_three = 1;
 //     dp_value_four = 1;
-     }
-  else if (state == DHT_ERROR_NOT_RESPOND){
-     // Do something if the sensor did not respond
-/*     one = 8;
-     two = 8;
-     three = 8;
-     four = 8;
-     dp_value_one = 1;
-     dp_value_two = 1;
-     dp_value_three = 1;
-     dp_value_four = 1; */
-   }
-}
-
-void humidity_reading(void){
-  DHT22_STATE_t state;
-  DHT22_DATA_t sensor_data;
-  state = DHT22_StartReading();
-  state = DHT22_CheckStatus(&sensor_data);
-  if (state == DHT_DATA_READY){
-     // Do something with the data.
-     // sensor_data.temperature_integral
-     // sensor_data.temperature_decimal
-     // sensor_data.humidity_integral
-     // sensor_data.humidity_decimal
-     one = sensor_data.humidity_integral / 10;
-     two = sensor_data.humidity_integral % 10;
-     three = sensor_data.humidity_decimal;
-     four = 11;
-     dp_value_one = 0;
-     dp_value_two = 1;
-     dp_value_three = 0;
-     dp_value_four = 0;
-     }
-  else if (state == DHT_ERROR_CHECKSUM){
-     // Do something if there is a Checksum error
-/*     one = 0;
-     two = 0;
-     three = 0;
-     four = 0;
-     dp_value_one = 1;
-     dp_value_two = 1;
-     dp_value_three = 1;
-     dp_value_four = 1; */
      }
   else if (state == DHT_ERROR_NOT_RESPOND){
      // Do something if the sensor did not respond
