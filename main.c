@@ -15,6 +15,7 @@ void timer_init(void);
 void display_toggle(uint8_t toggle_bit);
 void display_function(void);
 void dht_reading_func(void);
+void value_displayed_func(void);
 //void humidity_reading(void);
 
 volatile uint8_t tot_overflow;
@@ -34,25 +35,28 @@ volatile uint8_t dp_dht_value_two = 0;
 volatile uint8_t dp_dht_value_three = 0;
 volatile uint8_t dp_dht_value_four = 0;
 
-volatile uint8_t one = 0;
-volatile uint8_t two = 0;
-volatile uint8_t three = 0;
-volatile uint8_t four = 0;
+volatile uint8_t one = 14;
+volatile uint8_t two = 14;
+volatile uint8_t three = 14;
+volatile uint8_t four = 14;
 
-volatile uint8_t dht_temp_one = 0;
-volatile uint8_t dht_temp_two = 0;
-volatile uint8_t dht_temp_three = 0;
-volatile uint8_t dht_temp_four = 0;
+volatile uint8_t dht_temp_one = 14;
+volatile uint8_t dht_temp_two = 14;
+volatile uint8_t dht_temp_three = 14;
+volatile uint8_t dht_temp_four = 14;
 
-volatile uint8_t dht_humidity_one = 0;
-volatile uint8_t dht_humidity_two = 0;
-volatile uint8_t dht_humidity_three = 0;
-volatile uint8_t dht_humidity_four = 0;
+volatile uint8_t dht_humidity_one = 14;
+volatile uint8_t dht_humidity_two = 14;
+volatile uint8_t dht_humidity_three = 14;
+volatile uint8_t dht_humidity_four = 14;
 
 //c = 10;
 //h = 11;
-//e = 12; //a coder
-//f = 13; //a coder
+//e = 12;
+//f = 13;
+//- = 14;
+//° = 15;
+//(all off) = 16;
 
 int main(void) { // main program
 
@@ -65,49 +69,7 @@ int main(void) { // main program
   sei(); // Enable global interrupts
 
   while(1){ // loop forever
-    if (value_displayed == 0){ // Display temperature
-      if (dht_reading == 0){
-        one = dht_temp_one;
-        two = dht_temp_two;
-        three = dht_temp_three;
-        four = dht_temp_four;
-        dp_value_one = dp_dht_value_one;
-        dp_value_two = dp_dht_value_two;
-        dp_value_three = dp_dht_value_three;
-        dp_value_four = dp_dht_value_four;
-        dht_reading_func();
-      }
-      dht_reading = 1;
-      if (dht_reading >= 1){
-        _delay_ms(2000);
-        dht_reading = 0;
-      }
-    }else if (value_displayed == 1){ // Display humidity
-      if (dht_reading == 0){
-        one = dht_humidity_one;
-        two = dht_humidity_two;
-        three = dht_humidity_three;
-        four = dht_humidity_four;
-        dp_value_one = dp_dht_value_one;
-        dp_value_two = dp_dht_value_two;
-        dp_value_three = dp_dht_value_three;
-        dp_value_four = dp_dht_value_four;
-        dht_reading_func();
-      }
-      dht_reading = 1;
-      if (dht_reading >= 1){
-        _delay_ms(2000);
-        dht_reading = 0;
-      }
-    }else if (value_displayed == 2){ // Display time (hour.minutes)
-
-    }else if (value_displayed == 3){ // Display date (day.month)
-
-    }else if (value_displayed == 4){ // Display year
-
-    }else{ // Default : display temperature
-
-    }
+    value_displayed_func();
   }
 }
 
@@ -117,6 +79,33 @@ ISR(INT1_vect) {
   value_displayed++;
   if (value_displayed >= 2){ // >= 5 normalement
     value_displayed = 0;
+  }
+  if (value_displayed == 0){ // Display temperature
+      one = dht_temp_one;
+      two = dht_temp_two;
+      three = dht_temp_three;
+      four = dht_temp_four;
+      dp_value_one = dp_dht_value_one;
+      dp_value_two = dp_dht_value_two;
+      dp_value_three = dp_dht_value_three;
+      dp_value_four = dp_dht_value_four;
+  }else if (value_displayed == 1){ // Display humidity
+      one = dht_humidity_one;
+      two = dht_humidity_two;
+      three = dht_humidity_three;
+      four = dht_humidity_four;
+      dp_value_one = dp_dht_value_one;
+      dp_value_two = dp_dht_value_two;
+      dp_value_three = dp_dht_value_three;
+      dp_value_four = dp_dht_value_four;
+  }else if (value_displayed == 2){ // Display time (hour.minutes)
+
+  }else if (value_displayed == 3){ // Display date (day.month)
+
+  }else if (value_displayed == 4){ // Display year
+
+  }else{ // Default : display temperature
+
   }
 }
 
@@ -219,8 +208,25 @@ void display_digit(uint8_t digit, uint8_t decimal_point_bit) {
       break;
     case 13: // Display char "F"
       PORTB |= (1<<PB1) | (1<<PB2);
-      PORTC |= (1<<PC0) | (1<<PC3);
-      PORTC &= ~((1<<PC1) | (1<<PC2));
+      PORTC |= (1<<PC0);
+      PORTC &= ~((1<<PC1) | (1<<PC2) | (1<<PC3));
+      PORTD |= (1<<PD4);
+      break;
+    case 14: // Display char "-"
+      PORTB &= ~((1<<PB1) | (1<<PB2));
+      PORTC &= ~((1<<PC0) | (1<<PC1) | (1<<PC2) | (1<<PC3));
+      PORTD |= (1<<PD4);
+      break;
+    case 15: // Display char "°"
+      PORTB |= (1<<PB2);
+      PORTB &= ~(1<<PB1);
+      PORTC |= (1<<PC0) | (1<<PC1);
+      PORTC &= ~((1<<PC2) | (1<<PC3));
+      PORTD |= (1<<PD4);
+      break;
+    case 16: // Display all OFF
+      PORTB &= ~((1<<PB1) | (1<<PB2));
+      PORTC &= ~((1<<PC0) | (1<<PC1) | (1<<PC2) | (1<<PC3));
       PORTD &= ~(1<<PD4);
       break;
     default: // Display Number 8
@@ -325,7 +331,7 @@ void dht_reading_func(void){
      dht_temp_one = sensor_data.temperature_integral / 10;
      dht_temp_two = sensor_data.temperature_integral % 10;
      dht_temp_three = sensor_data.temperature_decimal;
-     dht_temp_four = 10;
+     dht_temp_four = 15;
      dht_humidity_one = sensor_data.humidity_integral / 10;
      dht_humidity_two = sensor_data.humidity_integral % 10;
      dht_humidity_three = sensor_data.humidity_decimal;
@@ -357,4 +363,50 @@ void dht_reading_func(void){
      dp_value_three = 1;
      dp_value_four = 1; */
    }
+}
+
+void value_displayed_func(void){
+  if (value_displayed == 0){ // Display temperature
+    if (dht_reading == 0){
+      dht_reading_func();
+      one = dht_temp_one;
+      two = dht_temp_two;
+      three = dht_temp_three;
+      four = dht_temp_four;
+      dp_value_one = dp_dht_value_one;
+      dp_value_two = dp_dht_value_two;
+      dp_value_three = dp_dht_value_three;
+      dp_value_four = dp_dht_value_four;
+    }
+    dht_reading = 1;
+    if (dht_reading >= 1){
+      _delay_ms(2000);
+      dht_reading = 0;
+    }
+  }else if (value_displayed == 1){ // Display humidity
+    if (dht_reading == 0){
+      dht_reading_func();
+      one = dht_humidity_one;
+      two = dht_humidity_two;
+      three = dht_humidity_three;
+      four = dht_humidity_four;
+      dp_value_one = dp_dht_value_one;
+      dp_value_two = dp_dht_value_two;
+      dp_value_three = dp_dht_value_three;
+      dp_value_four = dp_dht_value_four;
+    }
+    dht_reading = 1;
+    if (dht_reading >= 1){
+      _delay_ms(2000);
+      dht_reading = 0;
+    }
+  }else if (value_displayed == 2){ // Display time (hour.minutes)
+
+  }else if (value_displayed == 3){ // Display date (day.month)
+
+  }else if (value_displayed == 4){ // Display year
+
+  }else{ // Default : display temperature
+
+  }
 }
