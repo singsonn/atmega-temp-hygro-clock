@@ -1,6 +1,9 @@
 avr-gcc -g -Os -mmcu=atmega328p -c main.c && \
   avr-gcc -g -Os -mmcu=atmega328p -c DHT22int.c && \
-  avr-gcc -g -mmcu=atmega328p -o main.elf main.o DHT22int.o && \
+  avr-gcc -g -Os -mmcu=atmega328p -c rtc.c && \
+  avr-gcc -g -Os -mmcu=atmega328p -c twi.c && \
+  avr-gcc -g -Os -mmcu=atmega328p -c twi-lowlevel.c && \
+  avr-gcc -g -mmcu=atmega328p -o main.elf main.o DHT22int.o rtc.o twi.o twi-lowlevel.o && \
   avr-objcopy -j .text -j .data -O ihex main.elf main.hex && \
   avr-objcopy -j .eeprom --change-section-lma .eeprom=0 -O ihex main.elf main_eeprom.hex && \
   avrdude -p m328p -c usbasp-clone -U flash:w:main.hex -U eeprom:w:main_eeprom.hex

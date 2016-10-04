@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "DHT22int.h"
+#include "rtc.h"
+#include "twi.h"
 
 void display_digit(uint8_t digit, uint8_t decimal_point_bit);
 void ports_init(void);
@@ -16,7 +18,7 @@ void display_toggle(uint8_t toggle_bit);
 void display_function(void);
 void dht_reading_func(void);
 void value_displayed_func(void);
-//void humidity_reading(void);
+void read_rtc(void);
 
 volatile uint8_t tot_overflow;
 
@@ -50,6 +52,9 @@ volatile uint8_t dht_humidity_two = 14;
 volatile uint8_t dht_humidity_three = 14;
 volatile uint8_t dht_humidity_four = 14;
 
+//volatile struct tm *t;
+volatile struct tm* t = NULL;
+
 //c = 10;
 //h = 11;
 //e = 12;
@@ -77,7 +82,7 @@ int main(void) { // main program
 ISR(INT1_vect) {
   dht_reading = 0;
   value_displayed++;
-  if (value_displayed >= 2){ // >= 5 normalement
+  if (value_displayed >= 3){ // >= 5 normalement
     value_displayed = 0;
   }
   if (value_displayed == 0){ // Display temperature
@@ -401,7 +406,20 @@ void value_displayed_func(void){
       dht_reading = 0;
     }
   }else if (value_displayed == 2){ // Display time (hour.minutes)
-
+    read_rtc();
+//    one = 0;
+//    two = 1;
+//    three = 2;
+//    four = 3;
+    one = t->hour / 10;
+    two = t->hour % 10;
+    three = t->min / 10;
+    four = t->min % 10;
+    dp_value_one = 0;
+    dp_value_two = 1;
+    dp_value_three = 0;
+    dp_value_four = 0;
+    _delay_ms(100);
   }else if (value_displayed == 3){ // Display date (day.month)
 
   }else if (value_displayed == 4){ // Display year
@@ -409,4 +427,9 @@ void value_displayed_func(void){
   }else{ // Default : display temperature
 
   }
+}
+
+void read_rtc(void)
+{
+	t = rtc_get_time();
 }
