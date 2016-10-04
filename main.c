@@ -86,25 +86,32 @@ ISR(INT1_vect) {
     value_displayed = 0;
   }
   if (value_displayed == 0){ // Display temperature
-      one = dht_temp_one;
-      two = dht_temp_two;
-      three = dht_temp_three;
-      four = dht_temp_four;
-      dp_value_one = dp_dht_value_one;
-      dp_value_two = dp_dht_value_two;
-      dp_value_three = dp_dht_value_three;
-      dp_value_four = dp_dht_value_four;
+    one = dht_temp_one;
+    two = dht_temp_two;
+    three = dht_temp_three;
+    four = dht_temp_four;
+    dp_value_one = dp_dht_value_one;
+    dp_value_two = dp_dht_value_two;
+    dp_value_three = dp_dht_value_three;
+    dp_value_four = dp_dht_value_four;
   }else if (value_displayed == 1){ // Display humidity
-      one = dht_humidity_one;
-      two = dht_humidity_two;
-      three = dht_humidity_three;
-      four = dht_humidity_four;
-      dp_value_one = dp_dht_value_one;
-      dp_value_two = dp_dht_value_two;
-      dp_value_three = dp_dht_value_three;
-      dp_value_four = dp_dht_value_four;
+    one = dht_humidity_one;
+    two = dht_humidity_two;
+    three = dht_humidity_three;
+    four = dht_humidity_four;
+    dp_value_one = dp_dht_value_one;
+    dp_value_two = dp_dht_value_two;
+    dp_value_three = dp_dht_value_three;
+    dp_value_four = dp_dht_value_four;
   }else if (value_displayed == 2){ // Display time (hour.minutes)
-
+    dht_temp_one = 14;
+    dht_temp_two = 14;
+    dht_temp_three = 14;
+    dht_temp_four = 14;
+    dht_humidity_one = 14;
+    dht_humidity_two = 14;
+    dht_humidity_three = 14;
+    dht_humidity_four = 14;
   }else if (value_displayed == 3){ // Display date (day.month)
 
   }else if (value_displayed == 4){ // Display year
@@ -407,10 +414,6 @@ void value_displayed_func(void){
     }
   }else if (value_displayed == 2){ // Display time (hour.minutes)
     read_rtc();
-//    one = 0;
-//    two = 1;
-//    three = 2;
-//    four = 3;
     one = t->hour / 10;
     two = t->hour % 10;
     three = t->min / 10;
