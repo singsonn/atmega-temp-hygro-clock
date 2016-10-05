@@ -20,7 +20,8 @@ void dht_reading_func(void);
 void value_displayed_func(void);
 void read_rtc(void);
 
-volatile uint8_t tot_overflow;
+uint8_t EEMEM DST = 0; // Variable for daylight saving time (0: no we are not in DST, 1: yes we are in DST)
+uint8_t EEMEM REGION = 0; // Variable for region (0: US/CA, 1:EU)
 
 volatile uint8_t toggle = 0;
 volatile uint8_t dht_reading = 0;
@@ -63,7 +64,7 @@ volatile uint8_t min_three = 16;
 volatile uint8_t min_four = 16;
 
 volatile uint8_t time_dp_value_two = 0;
-//volatile uint8_t time_dp_value_four = 0;
+volatile uint8_t day_of_week = 0;
 
 volatile uint8_t day_one = 16;
 volatile uint8_t day_two = 16;
@@ -409,25 +410,9 @@ void dht_reading_func(void){
      }
   else if (state == DHT_ERROR_CHECKSUM){
      // Do something if there is a Checksum error
-//     one = 0;
-//     two = 0;
-//     three = 0;
-//     four = 0;
-//     dp_value_one = 1;
-//     dp_value_two = 1;
-//     dp_value_three = 1;
-//     dp_value_four = 1;
      }
   else if (state == DHT_ERROR_NOT_RESPOND){
      // Do something if the sensor did not respond
-/*     one = 8;
-     two = 8;
-     three = 8;
-     four = 8;
-     dp_value_one = 1;
-     dp_value_two = 1;
-     dp_value_three = 1;
-     dp_value_four = 1; */
    }
 }
 
@@ -534,5 +519,6 @@ void read_rtc(void){
   day_four = t->mon % 10;
   year_three = t->year / 10;
   year_four = t->year % 10;
+  day_of_week = t->wday;
   time_dp_value_two = 1;
 }
