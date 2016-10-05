@@ -52,7 +52,24 @@ volatile uint8_t dht_humidity_two = 14;
 volatile uint8_t dht_humidity_three = 14;
 volatile uint8_t dht_humidity_four = 14;
 
-//volatile struct tm *t;
+volatile uint8_t year_one = 2;
+volatile uint8_t year_two = 0;
+volatile uint8_t year_three = 16;
+volatile uint8_t year_four = 16;
+
+volatile uint8_t hour_one = 16;
+volatile uint8_t hour_two = 16;
+volatile uint8_t min_three = 16;
+volatile uint8_t min_four = 16;
+
+volatile uint8_t time_dp_value_two = 0;
+//volatile uint8_t time_dp_value_four = 0;
+
+volatile uint8_t day_one = 16;
+volatile uint8_t day_two = 16;
+volatile uint8_t day_three = 16;
+volatile uint8_t day_four = 16;
+
 volatile struct tm* t = NULL;
 
 //c = 10;
@@ -73,6 +90,8 @@ int main(void) { // main program
 
   sei(); // Enable global interrupts
 
+  read_rtc();
+
   while(1){ // loop forever
     value_displayed_func();
   }
@@ -82,7 +101,7 @@ int main(void) { // main program
 ISR(INT1_vect) {
   dht_reading = 0;
   value_displayed++;
-  if (value_displayed >= 3){ // >= 5 normalement
+  if (value_displayed >= 5){ // >= 5 normalement
     value_displayed = 0;
   }
   if (value_displayed == 0){ // Display temperature
@@ -104,26 +123,55 @@ ISR(INT1_vect) {
     dp_value_three = dp_dht_value_three;
     dp_value_four = dp_dht_value_four;
   }else if (value_displayed == 2){ // Display time (hour.minutes)
-    dht_temp_one = 14;
-    dht_temp_two = 14;
-    dht_temp_three = 14;
-    dht_temp_four = 14;
-    dht_humidity_one = 14;
-    dht_humidity_two = 14;
-    dht_humidity_three = 14;
-    dht_humidity_four = 14;
+    one = hour_one;
+    two = hour_two;
+    three = min_three;
+    four = min_four;
+    dp_value_one = 0;
+    dp_value_two = time_dp_value_two;
+    dp_value_three = 0;
+    dp_value_four = 0;
   }else if (value_displayed == 3){ // Display date (day.month)
-
+    one = day_one;
+    two = day_two;
+    three = day_three;
+    four = day_four;
+    dp_value_one = 0;
+    dp_value_two = 1;
+    dp_value_three = 0;
+    dp_value_four = 0;
   }else if (value_displayed == 4){ // Display year
-
+    one = year_one;
+    two = year_two;
+    three = year_three;
+    four = year_four;
+    dp_value_one = 0;
+    dp_value_two = 0;
+    dp_value_three = 0;
+    dp_value_four = 0;
   }else{ // Default : display temperature
-
+    one = dht_temp_one;
+    two = dht_temp_two;
+    three = dht_temp_three;
+    four = dht_temp_four;
+    dp_value_one = dp_dht_value_one;
+    dp_value_two = dp_dht_value_two;
+    dp_value_three = dp_dht_value_three;
+    dp_value_four = dp_dht_value_four;
   }
 }
 
-//ISR(TIMER1_OVF_vect){
 ISR(TIMER1_COMPA_vect){
-//  tot_overflow++;
+  if (value_displayed == 2){
+    if ( dp_value_four == 0){
+      dp_value_four = 1;
+    }else{
+      dp_value_four = 0;
+    }
+  }
+}
+
+ISR(TIMER0_COMPA_vect){
   display_function();
 }
 
@@ -264,12 +312,18 @@ void interrupts_init(void){
 }
 
 void timer_init(void){
-  TCCR1B |= (1 << CS10) | (1 << WGM12);
-  OCR1A = 15000;
+  // Timer 1 for single dot toggle
+  TCCR1B |= (1 << CS10) | (1 << CS12) | (1 << WGM12);
+  OCR1A = 7811;
   TIMSK1 |= (1 << OCIE1A);
-//  TCCR1B |= (1 << CS10); // Set up timer with prescaler Fcpu/1 (no prescaler)
   TCNT1 = 0; // Initialize Timer 1 counter at 0
-//  TIMSK1 |= (1 << TOIE1); // Enable overflow interrupt
+
+  // Timer 0 for 7-segment toggle
+  TCCR0A |= (1 << WGM01);
+  TCCR0B |= (1 << CS02);
+  OCR0A = 50;
+  TIMSK0 |= (1 << OCIE0A);
+  TCNT0 = 0; // Initialize Timer 0 counter at 0
 }
 
 void display_toggle(uint8_t toggle_bit){
@@ -410,29 +464,74 @@ void value_displayed_func(void){
     dht_reading = 1;
     if (dht_reading >= 1){
       _delay_ms(2000);
+      read_rtc();
       dht_reading = 0;
     }
   }else if (value_displayed == 2){ // Display time (hour.minutes)
     read_rtc();
-    one = t->hour / 10;
-    two = t->hour % 10;
-    three = t->min / 10;
-    four = t->min % 10;
+    one = hour_one;
+    two = hour_two;
+    three = min_three;
+    four = min_four;
+    dp_value_one = 0;
+    dp_value_two = time_dp_value_two;
+    dp_value_three = 0;
+//    dp_value_four = 0;
+    _delay_ms(1);
+  }else if (value_displayed == 3){ // Display date (day.month)
+    read_rtc();
+    one = day_one;
+    two = day_two;
+    three = day_three;
+    four = day_four;
     dp_value_one = 0;
     dp_value_two = 1;
     dp_value_three = 0;
     dp_value_four = 0;
     _delay_ms(100);
-  }else if (value_displayed == 3){ // Display date (day.month)
-
   }else if (value_displayed == 4){ // Display year
-
+    read_rtc();
+    one = year_one;
+    two = year_two;
+    three = year_three;
+    four = year_four;
+    dp_value_one = 0;
+    dp_value_two = 0;
+    dp_value_three = 0;
+    dp_value_four = 0;
+    _delay_ms(1000);
   }else{ // Default : display temperature
-
+    if (dht_reading == 0){
+      dht_reading_func();
+      one = dht_temp_one;
+      two = dht_temp_two;
+      three = dht_temp_three;
+      four = dht_temp_four;
+      dp_value_one = dp_dht_value_one;
+      dp_value_two = dp_dht_value_two;
+      dp_value_three = dp_dht_value_three;
+      dp_value_four = dp_dht_value_four;
+    }
+    dht_reading = 1;
+    if (dht_reading >= 1){
+      _delay_ms(2000);
+      dht_reading = 0;
+    }
   }
 }
 
 void read_rtc(void)
 {
-	t = rtc_get_time();
+  t = rtc_get_time();
+  hour_one = t->hour / 10;
+  hour_two = t->hour % 10;
+  min_three = t->min / 10;
+  min_four = t->min % 10;
+  day_one = t->mday / 10;
+  day_two = t->mday % 10;
+  day_three = t->mon / 10;
+  day_four = t->mon % 10;
+  year_three = t->year / 10;
+  year_four = t->year % 10;
+  time_dp_value_two = 1;
 }
