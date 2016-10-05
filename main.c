@@ -447,6 +447,7 @@ void value_displayed_func(void){
     dht_reading = 1;
     if (dht_reading >= 1){
       _delay_ms(2000);
+      read_rtc();
       dht_reading = 0;
     }
   }else if (value_displayed == 1){ // Display humidity
