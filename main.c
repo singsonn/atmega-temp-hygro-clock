@@ -478,7 +478,7 @@ void value_displayed_func(void){
     dp_value_two = time_dp_value_two;
     dp_value_three = 0;
 //    dp_value_four = 0;
-    _delay_ms(1);
+    _delay_ms(2);
   }else if (value_displayed == 3){ // Display date (day.month)
     read_rtc();
     one = day_one;
@@ -522,8 +522,7 @@ void value_displayed_func(void){
   }
 }
 
-void read_rtc(void)
-{
+void read_rtc(void){
   t = rtc_get_time();
   hour_one = t->hour / 10;
   hour_two = t->hour % 10;
