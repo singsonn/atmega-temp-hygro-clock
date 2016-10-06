@@ -517,8 +517,10 @@ void read_rtc(void){
   day_two = t->mday % 10;
   day_three = t->mon / 10;
   day_four = t->mon % 10;
-  year_three = t->year / 10;
-  year_four = t->year % 10;
+  uint16_t year = t->year;
+  year = year - 1900;
+  year_three = year / 10;
+  year_four = year % 10;
   day_of_week = t->wday;
   time_dp_value_two = 1;
 }

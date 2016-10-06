@@ -1,0 +1,44 @@
+With Raspberry: 
+
+Setup I2C: http://www.raspberrypi-spy.co.uk/2014/11/enabling-the-i2c-interface-on-the-raspberry-pi/
+
+sudo raspi-config -> Advanced Options -> I2C -> Yes -> Reboot
+
+sudo apt-get update
+sudo apt-get install -y python-smbus i2c-tools
+
+Check if I2C enable: lsmod | grep i2c
+
+Check if DS3231 detected: sudo i2cdetect -y 1 (0 for old Rpi)
+
+To setup DS3231: http://www.raspberrypi-spy.co.uk/2015/05/adding-a-ds3231-real-time-clock-to-the-raspberry-pi/
+
+apt-get upgrade
+
+/etc/modules:
+
+snd-bcm2835
+i2c-bcm2835
+i2c-dev
+rtc-ds1307
+
+HW setup:
+
+DS1307	Pi GPIO
+GND	P1-06
+Vcc	P1-01 (3.3V)
+SDA	P1-03 (I2C SDA)
+SCL	P1-05 (I2C SCL)
+
+Test: sudo i2cdetect -y 1
+
+number 68 should be seen
+
+Then in root (sudo bash):
+
+echo ds1307 0x68 > /sys/class/i2c-adapter/i2c-1/new_device
+ntpq -p (make sure time is sync and up to date)
+hwclock -w --localtime (localtime is important)
+
+Warning : When plugging or removing DS32321 to Rpi always do it when RPi is OFF and power removed.
+
