@@ -42,3 +42,10 @@ hwclock -w --localtime (localtime is important)
 
 Warning : When plugging or removing DS32321 to Rpi always do it when RPi is OFF and power removed.
 
+Check Reg value in DS3231: 'i2cdump -y -f -r 0-6 1 0x68 c' 
+http://raspberrypi.stackexchange.com/questions/38186/how-to-install-real-time-clock-rtc-on-raspian
+
+Check Day of Week: 'i2cget 1 0x68 0x3'
+
+Set Day of Week: 'i2cset 1 0x68 0x3 0x$(date +%u)'
+https://wiki.openbeelab.org/index.php/Ds3231_rtc_module
