@@ -536,14 +536,18 @@ void read_rtc(void){
   }else { // REGION = EU
     if (day_of_week == 7 && month == 3 && day >= 25 && day <=31 && hour ==2 && DST==0){ // Beginning of DST
       // set RTC clock +1 h
-      t->hour = hour + 1;
-      rtc_set_time(t);
+      //t->hour = hour + 1;
+      //rtc_set_time(t);
+      hour = hour + 1;
+      rtc_write_byte(dec2bcd(hour), 0x02);
       DST=1;
     }
     if (day_of_week == 7 && month == 10 && day >= 25 && day <=31 && hour == 3 && DST==1){ // End of DST
       // set RTC clock -1 h
-      t->hour = hour - 1;
-      rtc_set_time(t);
+      //t->hour = hour - 1;
+      //rtc_set_time(t);
+      hour = hour - 1;
+      rtc_write_byte(dec2bcd(hour), 0x02);
       DST=0;
     }
   }
