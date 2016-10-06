@@ -20,8 +20,8 @@ void dht_reading_func(void);
 void value_displayed_func(void);
 void read_rtc(void);
 
-uint8_t EEMEM DST = 1; // Variable for daylight saving time (0: no we are not in DST, 1: yes we are in DST)
-uint8_t EEMEM REGION = 0; // Variable for region (0: US/CA, 1:EU)
+uint8_t EEMEM dst = 1; // Variable for daylight saving time (0: no we are not in dst, 1: yes we are in dst)
+uint8_t EEMEM region = 0; // Variable for region (0: US/CA, 1:EU)
 
 volatile uint8_t toggle = 0;
 volatile uint8_t dht_reading = 0;
@@ -79,6 +79,9 @@ volatile uint8_t day_four = 16;
 
 volatile struct tm* t = NULL;
 
+volatile uint8_t region_val = 0;
+volatile uint8_t dst_val = 0;
+
 //c = 10;
 //h = 11;
 //e = 12;
@@ -92,6 +95,9 @@ int main(void) { // main program
   ports_init();
   interrupts_init();
   timer_init();
+
+  region_val = eeprom_read_byte(&region);
+  dst_val = eeprom_read_byte(&dst);
 
   DHT22_Init();
 
@@ -326,7 +332,7 @@ void timer_init(void){
   // Timer 0 for 7-segment toggle
   TCCR0A |= (1 << WGM01);
   TCCR0B |= (1 << CS02);
-  OCR0A = 50;
+  OCR0A = 80;
   TIMSK0 |= (1 << OCIE0A);
   TCNT0 = 0; // Initialize Timer 0 counter at 0
 }
@@ -531,24 +537,43 @@ void read_rtc(void){
   year_four = year % 10;
   day_of_week = t->wday;
   time_dp_value_two = 1;
-  if (REGION == 0){ // REGION = US/CA
-
-  }else { // REGION = EU
-    if (day_of_week == 7 && month == 3 && day >= 25 && day <=31 && hour ==2 && DST==0){ // Beginning of DST
+  if (region_val == 0){ // region = US/CA
+    if (day_of_week == 7 && month == 3 && day >= 7 && day <= 14 && hour == 2 && dst_val == 0){ // Beginning of dst
       // set RTC clock +1 h
       //t->hour = hour + 1;
       //rtc_set_time(t);
       hour = hour + 1;
       rtc_write_byte(dec2bcd(hour), 0x02);
-      DST=1;
+      dst_val=1;
+      eeprom_update_byte(&dst,dst_val);
     }
-    if (day_of_week == 7 && month == 10 && day >= 25 && day <=31 && hour == 3 && DST==1){ // End of DST
+    if (day_of_week == 7 && month == 11 && day >= 1 && day <= 7 && hour == 2 && dst_val == 1){ // End of dst
       // set RTC clock -1 h
       //t->hour = hour - 1;
       //rtc_set_time(t);
       hour = hour - 1;
       rtc_write_byte(dec2bcd(hour), 0x02);
-      DST=0;
+      dst_val=0;
+      eeprom_update_byte(&dst,dst_val);
+    }
+  }else { // region = EU
+    if (day_of_week == 7 && month == 3 && day >= 25 && day <= 31 && hour == 2 && dst_val == 0){ // Beginning of dst
+      // set RTC clock +1 h
+      //t->hour = hour + 1;
+      //rtc_set_time(t);
+      hour = hour + 1;
+      rtc_write_byte(dec2bcd(hour), 0x02);
+      dst_val=1;
+      eeprom_update_byte(&dst,dst_val);
+    }
+    if (day_of_week == 7 && month == 10 && day >= 25 && day <= 31 && hour == 3 && dst_val == 1){ // End of dst
+      // set RTC clock -1 h
+      //t->hour = hour - 1;
+      //rtc_set_time(t);
+      hour = hour - 1;
+      rtc_write_byte(dec2bcd(hour), 0x02);
+      dst_val=0;
+      eeprom_update_byte(&dst,dst_val);
     }
   }
 

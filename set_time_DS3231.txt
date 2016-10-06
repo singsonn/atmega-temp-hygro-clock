@@ -1,4 +1,4 @@
-With Raspberry: 
+With Raspberry:
 
 Setup I2C: http://www.raspberrypi-spy.co.uk/2014/11/enabling-the-i2c-interface-on-the-raspberry-pi/
 
@@ -42,10 +42,10 @@ hwclock -w --localtime (localtime is important)
 
 Warning : When plugging or removing DS32321 to Rpi always do it when RPi is OFF and power removed.
 
-Check Reg value in DS3231: 'i2cdump -y -f -r 0-6 1 0x68 c' 
+Check Reg value in DS3231: 'i2cdump -y -f -r 0-6 1 0x68 c'
 http://raspberrypi.stackexchange.com/questions/38186/how-to-install-real-time-clock-rtc-on-raspian
 
-Check Day of Week: 'i2cget 1 0x68 0x3'
+Check Day of Week: 'i2cget -f 1 0x68 0x3' (-f to force when driver is loaded)
 
-Set Day of Week: 'i2cset 1 0x68 0x3 0x$(date +%u)'
+Set Day of Week: 'i2cset -f 1 0x68 0x3 0x$(date +%u)' (-f to force when driver is loaded)
 https://wiki.openbeelab.org/index.php/Ds3231_rtc_module
