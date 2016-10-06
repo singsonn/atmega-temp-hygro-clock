@@ -97,8 +97,6 @@ int main(void) { // main program
 
   sei(); // Enable global interrupts
 
-  read_rtc();
-
   while(1){ // loop forever
     value_displayed_func();
   }
