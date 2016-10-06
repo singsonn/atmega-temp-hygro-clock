@@ -1,4 +1,4 @@
-#define F_CPU 8000000UL // speed on mcu crystal (20Mhz)
+#define F_CPU 8000000UL // speed on mcu crystal (8Mhz)
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
@@ -172,7 +172,7 @@ ISR(INT1_vect) {
   }
 }
 
-ISR(TIMER1_COMPA_vect){
+ISR(TIMER1_COMPA_vect){ // Timer1 ISR to toggle seconds when time is displayed
   if (value_displayed == 2){
     if ( dp_value_four == 0){
       dp_value_four = 1;
@@ -182,7 +182,7 @@ ISR(TIMER1_COMPA_vect){
   }
 }
 
-ISR(TIMER0_COMPA_vect){
+ISR(TIMER0_COMPA_vect){ // Timer0 ISR to change to 7-segment display that is ON
   display_function();
 }
 
@@ -540,8 +540,6 @@ void read_rtc(void){
   if (region_val == 0){ // region = US/CA
     if (day_of_week == 7 && month == 3 && day >= 7 && day <= 14 && hour == 2 && dst_val == 0){ // Beginning of dst
       // set RTC clock +1 h
-      //t->hour = hour + 1;
-      //rtc_set_time(t);
       hour = hour + 1;
       rtc_write_byte(dec2bcd(hour), 0x02);
       dst_val=1;
@@ -549,8 +547,6 @@ void read_rtc(void){
     }
     if (day_of_week == 7 && month == 11 && day >= 1 && day <= 7 && hour == 2 && dst_val == 1){ // End of dst
       // set RTC clock -1 h
-      //t->hour = hour - 1;
-      //rtc_set_time(t);
       hour = hour - 1;
       rtc_write_byte(dec2bcd(hour), 0x02);
       dst_val=0;
@@ -559,8 +555,6 @@ void read_rtc(void){
   }else { // region = EU
     if (day_of_week == 7 && month == 3 && day >= 25 && day <= 31 && hour == 2 && dst_val == 0){ // Beginning of dst
       // set RTC clock +1 h
-      //t->hour = hour + 1;
-      //rtc_set_time(t);
       hour = hour + 1;
       rtc_write_byte(dec2bcd(hour), 0x02);
       dst_val=1;
@@ -568,8 +562,6 @@ void read_rtc(void){
     }
     if (day_of_week == 7 && month == 10 && day >= 25 && day <= 31 && hour == 3 && dst_val == 1){ // End of dst
       // set RTC clock -1 h
-      //t->hour = hour - 1;
-      //rtc_set_time(t);
       hour = hour - 1;
       rtc_write_byte(dec2bcd(hour), 0x02);
       dst_val=0;
