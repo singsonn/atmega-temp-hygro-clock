@@ -469,7 +469,7 @@ void value_displayed_func(void){
     dp_value_two = time_dp_value_two;
     dp_value_three = 0;
 //    dp_value_four = 0;
-    _delay_ms(2);
+    _delay_ms(5);
   }else if (value_displayed == 3){ // Display date (day.month)
     read_rtc();
     one = day_one;
