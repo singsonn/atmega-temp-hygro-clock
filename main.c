@@ -532,6 +532,8 @@ void read_rtc(void){
   day_of_week = t->wday;
   time_dp_value_two = 1;
   if (REGION == 0){ // REGION = US/CA
+
+  }else { // REGION = EU
     if (day_of_week == 7 && month == 3 && day >= 25 && day <=31 && hour ==2 && DST==0){ // Beginning of DST
       // set RTC clock +1 h
       t->hour = hour + 1;
@@ -544,8 +546,6 @@ void read_rtc(void){
       rtc_set_time(t);
       DST=0;
     }
-  }else { // REGION = EU
-
   }
 
 }
