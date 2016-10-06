@@ -20,7 +20,7 @@ void dht_reading_func(void);
 void value_displayed_func(void);
 void read_rtc(void);
 
-uint8_t EEMEM DST = 0; // Variable for daylight saving time (0: no we are not in DST, 1: yes we are in DST)
+uint8_t EEMEM DST = 1; // Variable for daylight saving time (0: no we are not in DST, 1: yes we are in DST)
 uint8_t EEMEM REGION = 0; // Variable for region (0: US/CA, 1:EU)
 
 volatile uint8_t toggle = 0;
@@ -64,7 +64,13 @@ volatile uint8_t min_three = 16;
 volatile uint8_t min_four = 16;
 
 volatile uint8_t time_dp_value_two = 0;
+
 volatile uint8_t day_of_week = 0;
+volatile uint8_t month = 0;
+volatile uint8_t day = 0;
+volatile uint8_t hour = 0;
+volatile uint8_t minute = 0;
+volatile uint16_t year = 0;
 
 volatile uint8_t day_one = 16;
 volatile uint8_t day_two = 16;
@@ -509,18 +515,39 @@ void value_displayed_func(void){
 
 void read_rtc(void){
   t = rtc_get_time();
+  hour = t->hour;
   hour_one = t->hour / 10;
   hour_two = t->hour % 10;
+  minute = t->min;
   min_three = t->min / 10;
   min_four = t->min % 10;
+  day = t->mday;
   day_one = t->mday / 10;
   day_two = t->mday % 10;
+  month = t->mon;
   day_three = t->mon / 10;
   day_four = t->mon % 10;
-  uint16_t year = t->year;
+  year = t->year;
   year = year - 1900;
   year_three = year / 10;
   year_four = year % 10;
   day_of_week = t->wday;
   time_dp_value_two = 1;
+  if (REGION == 0){ // REGION = US/CA
+    if (day_of_week == 7 && month == 3 && day >= 25 && day <=31 && hour ==2 && DST==0){ // Beginning of DST
+      // set RTC clock +1 h
+      t->hour = hour + 1;
+      rtc_set_time(t);
+      DST=1;
+    }
+    if (day_of_week == 7 && month == 10 && day >= 25 && day <=31 && hour == 3 && DST==1){ // End of DST
+      // set RTC clock -1 h
+      t->hour = hour - 1;
+      rtc_set_time(t);
+      DST=0;
+    }
+  }else { // REGION = EU
+
+  }
+
 }
