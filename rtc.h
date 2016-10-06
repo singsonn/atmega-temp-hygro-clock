@@ -58,6 +58,11 @@ extern struct tm _tm;
 // Initialize the RTC and autodetect type (DS1307 or DS3231)
 void rtc_init(void);
 
+// Read byte on RTC
+uint8_t rtc_read_byte(uint8_t offset)
+// Write byte on RTC
+void rtc_write_byte(uint8_t b, uint8_t offset);
+
 // Autodetection
 bool rtc_is_ds1307(void);
 bool rtc_is_ds3231(void);
