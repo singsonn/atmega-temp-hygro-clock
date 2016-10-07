@@ -650,14 +650,14 @@ uint8_t I2C_ClearBus(void){
   // When there is only one I2C master a Start or Repeat Start has the same function as a Stop and clears the bus.
   /// A Repeat Start is a Start occurring after a Start with no intervening Stop.
   _delay_us(10); // wait >5uS
-  pinMode(SDA, INPUT); // remove output low
+  //pinMode(SDA, INPUT); // remove output low
   DDRC &= ~(1<<DDC5);
-  pinMode(SDA, INPUT_PULLUP); // and make SDA high i.e. send I2C STOP control.
+  //pinMode(SDA, INPUT_PULLUP); // and make SDA high i.e. send I2C STOP control.
   PORTC |= (1<<PC5);
   _delay_us(10); // x. wait >5uS
-  pinMode(SDA, INPUT); // and reset pins as tri-state inputs which is the default state on reset
+  //pinMode(SDA, INPUT); // and reset pins as tri-state inputs which is the default state on reset
   PORTC &= ~(1<<PC5);
-  pinMode(SCL, INPUT);
+  //pinMode(SCL, INPUT);
   DDRC &= ~(1<<DDC4);
   return 0; // all ok
 }
