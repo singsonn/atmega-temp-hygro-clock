@@ -615,14 +615,17 @@ uint8_t I2C_ClearBus(void){
     clockCount--;
   // Note: I2C bus is open collector so do NOT drive SCL or SDA high.
     //pinMode(SCL, INPUT); // release SCL pullup so that when made output it will be LOW
+    DDRC &= ~(1<<DDC4);
     PORTC &= ~(1<<PC4);
     //pinMode(SCL, OUTPUT); // then clock SCL Low
     DDRC |= (1<<DDC4);
     _delay_us(10); //  for >5uS
     //pinMode(SCL, INPUT); // release SCL LOW
+    DDRC &= ~(1<<DDC4);
     PORTC &= ~(1<<PC4);
     //pinMode(SCL, INPUT_PULLUP); // turn on pullup resistors again
-    DDRC &= ~((1<<DDC4)
+    DDRC &= ~(1<<DDC4);
+    PORTC |= (1<<PC4);
     // do not force high as slave may be holding it low for clock stretching.
     _delay_us(10); //  for >5uS
     // The >5uS is so that even the slowest I2C devices are handled.
