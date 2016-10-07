@@ -19,6 +19,7 @@ void display_function(void);
 void dht_reading_func(void);
 void value_displayed_func(void);
 void read_rtc(void);
+uint8_t I2C_ClearBus(void);
 
 uint8_t EEMEM dst = 1; // Variable for daylight saving time (0: no we are not in dst, 1: yes we are in dst)
 uint8_t EEMEM region = 0; // Variable for region (0: US/CA, 1:EU)
@@ -98,6 +99,22 @@ int main(void) { // main program
 
   region_val = eeprom_read_byte(&region);
   dst_val = eeprom_read_byte(&dst);
+
+  uint8_t rtn = I2C_ClearBus(); // clear the I2C bus first before calling Wire.begin()
+    if (rtn != 0) {
+      //Serial.println(F("I2C bus error. Could not clear"));
+      if (rtn == 1) {
+        //Serial.println(F("SCL clock line held low"));
+      } else if (rtn == 2) {
+        //Serial.println(F("SCL clock line held low by slave clock stretch"));
+      } else if (rtn == 3) {
+        //Serial.println(F("SDA data line held low"));
+      }
+    } else { // bus clear
+      // re-enable Wire
+      // now can start Wire Arduino master
+      //Wire.begin();
+    }
 
   DHT22_Init();
 
@@ -568,5 +585,79 @@ void read_rtc(void){
       eeprom_update_byte(&dst,dst_val);
     }
   }
+}
 
+uint8_t I2C_ClearBus(void){
+  TWCR &= ~(_BV(TWEN)); //Disable the Atmel 2-Wire interface so we can control the SDA and SCL pins directly
+
+  //pinMode(SDA, INPUT_PULLUP); // Make SDA (data) and SCL (clock) pins Inputs with pullup.
+  DDRC &= ~(1<<DDC4);
+  PORTC |= (1<<PC4);
+  //pinMode(SCL, INPUT_PULLUP);
+  DDRC &= ~(1<<DDC5);
+  PORTC |= (1<<PC5);
+
+  _delay_ms(2500);  // Wait 2.5 secs. This is strictly only necessary on the first power
+  // up of the DS3231 module to allow it to initialize properly,
+  // but is also assists in reliable programming of FioV3 boards as it gives the
+  // IDE a chance to start uploaded the program
+  // before existing sketch confuses the IDE by sending Serial data.
+
+  uint8_t scl_low = (PINC4  == 0); // Check is SCL is Low.
+  if (scl_low) { //If it is held low Arduno cannot become the I2C master.
+    return 1; //I2C bus error. Could not clear SCL clock line held low
+  }
+
+  uint8_t sda_low = (PINC5  == 0);  // vi. Check SDA input.
+  uint8_t clockCount = 20; // > 2x9 clock
+
+  while (sda_low && (clockCount > 0)) { //  vii. If SDA is Low,
+    clockCount--;
+  // Note: I2C bus is open collector so do NOT drive SCL or SDA high.
+    //pinMode(SCL, INPUT); // release SCL pullup so that when made output it will be LOW
+    PORTC &= ~(1<<PC4);
+    //pinMode(SCL, OUTPUT); // then clock SCL Low
+    DDRC |= (1<<DDC4);
+    _delay_us(10); //  for >5uS
+    //pinMode(SCL, INPUT); // release SCL LOW
+    PORTC &= ~(1<<PC4);
+    //pinMode(SCL, INPUT_PULLUP); // turn on pullup resistors again
+    DDRC &= ~((1<<DDC4)
+    // do not force high as slave may be holding it low for clock stretching.
+    _delay_us(10); //  for >5uS
+    // The >5uS is so that even the slowest I2C devices are handled.
+    scl_low = (PINC4  == 0); // Check if SCL is Low.
+    uint8_t counter = 20;
+    while (scl_low && (counter > 0)) {  //  loop waiting for SCL to become High only wait 2sec.
+      counter--;
+      _delay_ms(100);
+      scl_low = (PINC4  == 0);
+    }
+    if (scl_low) { // still low after 2 sec error
+      return 2; // I2C bus error. Could not clear. SCL clock line held low by slave clock stretch for >2sec
+    }
+    sda_low = (PINC5  == 0); //   and check SDA input again and loop
+  }
+  if (sda_low) { // still low
+    return 3; // I2C bus error. Could not clear. SDA data line held low
+  }
+
+  // else pull SDA line low for Start or Repeated Start
+  //pinMode(SDA, INPUT); // remove pullup.
+  PORTC &= ~(1<<PC5);
+  //pinMode(SDA, OUTPUT);  // and then make it LOW i.e. send an I2C Start or Repeated start control.
+  DDRC |= (1<<DDC5);
+  // When there is only one I2C master a Start or Repeat Start has the same function as a Stop and clears the bus.
+  /// A Repeat Start is a Start occurring after a Start with no intervening Stop.
+  _delay_us(10); // wait >5uS
+  pinMode(SDA, INPUT); // remove output low
+  DDRC &= ~(1<<DDC5);
+  pinMode(SDA, INPUT_PULLUP); // and make SDA high i.e. send I2C STOP control.
+  PORTC |= (1<<PC5);
+  _delay_us(10); // x. wait >5uS
+  pinMode(SDA, INPUT); // and reset pins as tri-state inputs which is the default state on reset
+  PORTC &= ~(1<<PC5);
+  pinMode(SCL, INPUT);
+  DDRC &= ~(1<<DDC4);
+  return 0; // all ok
 }
