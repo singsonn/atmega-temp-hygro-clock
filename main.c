@@ -10,6 +10,10 @@
 #include "rtc.h"
 #include "twi.h"
 
+//USART BAUD rate setup
+#define BAUD 9600                                   // define baud
+#define BAUDRATE ((F_CPU)/(BAUD*16UL)-1)            // set baud rate value for UBRR
+
 void display_digit(uint8_t digit, uint8_t decimal_point_bit);
 void ports_init(void);
 void interrupts_init(void);
@@ -20,9 +24,15 @@ void dht_reading_func(void);
 void value_displayed_func(void);
 void read_rtc(void);
 uint8_t I2C_ClearBus(void);
+void uart_init (void);
+void uart_transmit (uint8_t data);
+uint8_t uart_receive (void);
+void uart_transmit_s(char *s);
 
 uint8_t EEMEM dst = 1; // Variable for daylight saving time (0: no we are not in dst, 1: yes we are in dst)
 uint8_t EEMEM region = 0; // Variable for region (0: US/CA, 1:EU)
+uint8_t EEMEM value_displayed_mem = 0; // Variable for saving value displayed
+
 
 volatile uint8_t toggle = 0;
 volatile uint8_t dht_reading = 0;
@@ -54,15 +64,20 @@ volatile uint8_t dht_humidity_two = 14;
 volatile uint8_t dht_humidity_three = 14;
 volatile uint8_t dht_humidity_four = 14;
 
+volatile uint8_t temperature_val1 = 0;
+volatile uint8_t temperature_val2 = 0;
+volatile uint8_t humidity_val1 = 0;
+volatile uint8_t humidity_val2 = 0;
+
 volatile uint8_t year_one = 2;
 volatile uint8_t year_two = 0;
-volatile uint8_t year_three = 16;
-volatile uint8_t year_four = 16;
+volatile uint8_t year_three = 14;
+volatile uint8_t year_four = 14;
 
-volatile uint8_t hour_one = 16;
-volatile uint8_t hour_two = 16;
-volatile uint8_t min_three = 16;
-volatile uint8_t min_four = 16;
+volatile uint8_t hour_one = 14;
+volatile uint8_t hour_two = 14;
+volatile uint8_t min_three = 14;
+volatile uint8_t min_four = 14;
 
 volatile uint8_t time_dp_value_two = 0;
 
@@ -71,12 +86,13 @@ volatile uint8_t month = 0;
 volatile uint8_t day = 0;
 volatile uint8_t hour = 0;
 volatile uint8_t minute = 0;
+volatile uint8_t second = 0;
 volatile uint16_t year = 0;
 
-volatile uint8_t day_one = 16;
-volatile uint8_t day_two = 16;
-volatile uint8_t day_three = 16;
-volatile uint8_t day_four = 16;
+volatile uint8_t day_one = 14;
+volatile uint8_t day_two = 14;
+volatile uint8_t day_three = 14;
+volatile uint8_t day_four = 14;
 
 volatile struct tm* t = NULL;
 
@@ -96,27 +112,37 @@ int main(void) { // main program
   ports_init();
   interrupts_init();
   timer_init();
+  uart_init();
 
   region_val = eeprom_read_byte(&region);
   dst_val = eeprom_read_byte(&dst);
+  value_displayed = eeprom_read_byte(&value_displayed_mem);
 
   uint8_t rtn = I2C_ClearBus(); // clear the I2C bus first before calling Wire.begin()
     if (rtn != 0) {
-      //Serial.println(F("I2C bus error. Could not clear"));
+      uart_transmit_s("I2C bus error. Could not clear\n\r");
       if (rtn == 1) {
-        //Serial.println(F("SCL clock line held low"));
+        uart_transmit_s("SCL clock line held low\n\r");
       } else if (rtn == 2) {
-        //Serial.println(F("SCL clock line held low by slave clock stretch"));
+        uart_transmit_s("SCL clock line held low by slave clock stretch\n\r");
       } else if (rtn == 3) {
-        //Serial.println(F("SDA data line held low"));
+        uart_transmit_s("SDA data line held low\n\r");
       }
     } else { // bus clear
+      uart_transmit_s("Bus clear\n\r");
       // re-enable Wire
       // now can start Wire Arduino master
       //Wire.begin();
     }
 
   DHT22_Init();
+
+  uart_transmit_s("\n\r");
+  uart_transmit_s("\n\r");
+  uart_transmit_s("- - -\n\r");
+  uart_transmit_s("Atmega328P Clock\n\r");
+  uart_transmit_s("DS321 + DHT22 initialized\n\r");
+  uart_transmit_s("Author: Axel Caspard - axel@singsonn.com - axelcaspard.com\n\r");
 
   sei(); // Enable global interrupts
 
@@ -127,11 +153,14 @@ int main(void) { // main program
 
 //Interrupt Service Routine for INT1 : Toggle between functions (show temperature, humidity, time, date, year)
 ISR(INT1_vect) {
+  uart_transmit_s("\r\n");
+  uart_transmit_s("\r\n");
   dht_reading = 0;
   value_displayed++;
   if (value_displayed >= 5){ // >= 5 normalement
     value_displayed = 0;
   }
+  eeprom_update_byte(&value_displayed_mem,value_displayed);
   if (value_displayed == 0){ // Display temperature
     one = dht_temp_one;
     two = dht_temp_two;
@@ -422,6 +451,10 @@ void dht_reading_func(void){
      // sensor_data.temperature_decimal
      // sensor_data.humidity_integral
      // sensor_data.humidity_decimal
+     temperature_val1 = sensor_data.temperature_integral;
+     temperature_val2 = sensor_data.temperature_decimal;
+     humidity_val1 = sensor_data.humidity_integral;
+     humidity_val2 = sensor_data.humidity_decimal;
      dht_temp_one = sensor_data.temperature_integral / 10;
      dht_temp_two = sensor_data.temperature_integral % 10;
      dht_temp_three = sensor_data.temperature_decimal;
@@ -455,6 +488,14 @@ void value_displayed_func(void){
       dp_value_two = dp_dht_value_two;
       dp_value_three = dp_dht_value_three;
       dp_value_four = dp_dht_value_four;
+      uart_transmit_s("Temperature: ");
+      char str[3];
+      sprintf(str, "%d", temperature_val1);
+      uart_transmit_s(str);
+      uart_transmit_s(".");
+      sprintf(str, "%d", temperature_val2);
+      uart_transmit_s(str);
+      uart_transmit_s("° Celsius\r");
     }
     dht_reading = 1;
     if (dht_reading >= 1){
@@ -473,6 +514,14 @@ void value_displayed_func(void){
       dp_value_two = dp_dht_value_two;
       dp_value_three = dp_dht_value_three;
       dp_value_four = dp_dht_value_four;
+      uart_transmit_s("Humidity: ");
+      char str[3];
+      sprintf(str, "%d", humidity_val1);
+      uart_transmit_s(str);
+      uart_transmit_s(".");
+      sprintf(str, "%d", humidity_val2);
+      uart_transmit_s(str);
+      uart_transmit_s("%\r");
     }
     dht_reading = 1;
     if (dht_reading >= 1){
@@ -489,6 +538,17 @@ void value_displayed_func(void){
     dp_value_one = 0;
     dp_value_two = time_dp_value_two;
     dp_value_three = 0;
+    uart_transmit_s("Time: ");
+    char str[3];
+    sprintf(str, "%d", hour);
+    uart_transmit_s(str);
+    uart_transmit_s(":");
+    sprintf(str, "%d", minute);
+    uart_transmit_s(str);
+    uart_transmit_s(":");
+    sprintf(str, "%d", second);
+    uart_transmit_s(str);
+    uart_transmit_s("\r");
 //    dp_value_four = 0;
     _delay_ms(5);
   }else if (value_displayed == 3){ // Display date (day.month)
@@ -501,18 +561,47 @@ void value_displayed_func(void){
     dp_value_two = 1;
     dp_value_three = 0;
     dp_value_four = 0;
+    uart_transmit_s("Date: ");
+    char str[3];
+    sprintf(str, "%d", day);
+    uart_transmit_s(str);
+    uart_transmit_s(".");
+    sprintf(str, "%d", month);
+    uart_transmit_s(str);
+    uart_transmit_s(".20");
+    sprintf(str, "%d", year);
+    uart_transmit_s(str);
+    uart_transmit_s("\r");
     _delay_ms(100);
   }else if (value_displayed == 4){ // Display year
-    read_rtc();
-    one = year_one;
-    two = year_two;
-    three = year_three;
-    four = year_four;
-    dp_value_one = 0;
-    dp_value_two = 0;
-    dp_value_three = 0;
-    dp_value_four = 0;
-    _delay_ms(1000);
+    if (dht_reading == 0){
+      read_rtc();
+      one = year_one;
+      two = year_two;
+      three = year_three;
+      four = year_four;
+      dp_value_one = 0;
+      dp_value_two = 0;
+      dp_value_three = 0;
+      dp_value_four = 0;
+      uart_transmit_s("Date: ");
+      char str[3];
+      sprintf(str, "%d", day);
+      uart_transmit_s(str);
+      uart_transmit_s(".");
+      sprintf(str, "%d", month);
+      uart_transmit_s(str);
+      uart_transmit_s(".20");
+      sprintf(str, "%d", year);
+      uart_transmit_s(str);
+      uart_transmit_s("\r");
+    }
+    dht_reading = 1;
+    if (dht_reading >= 1){
+      _delay_ms(2000);
+      dht_reading_func();
+      dht_reading = 0;
+    }
   }else{ // Default : display temperature
     if (dht_reading == 0){
       dht_reading_func();
@@ -542,6 +631,7 @@ void read_rtc(void){
   minute = t->min;
   min_three = t->min / 10;
   min_four = t->min % 10;
+  second = t->sec;
   day = t->mday;
   day_one = t->mday / 10;
   day_two = t->mday % 10;
@@ -550,6 +640,8 @@ void read_rtc(void){
   day_four = t->mon % 10;
   year = t->year;
   year = year - 1900;
+  year_one = 2;
+  year_two = 0;
   year_three = year / 10;
   year_four = year % 10;
   day_of_week = t->wday;
@@ -588,7 +680,7 @@ void read_rtc(void){
 }
 
 uint8_t I2C_ClearBus(void){
-  TWCR &= ~(_BV(TWEN)); //Disable the Atmel 2-Wire interface so we can control the SDA and SCL pins directly
+  TWCR &= ~(1<<TWEN); //Disable the Atmel 2-Wire interface so we can control the SDA and SCL pins directly
 
   //pinMode(SDA, INPUT_PULLUP); // Make SDA (data) and SCL (clock) pins Inputs with pullup.
   DDRC &= ~(1<<DDC4);
@@ -603,43 +695,44 @@ uint8_t I2C_ClearBus(void){
   // IDE a chance to start uploaded the program
   // before existing sketch confuses the IDE by sending Serial data.
 
-  uint8_t scl_low = (PINC4  == 0); // Check is SCL is Low.
+  uint8_t scl_low = (!(PINC & (1<<PC5))); // Check is SCL is Low.
   if (scl_low) { //If it is held low Arduno cannot become the I2C master.
     return 1; //I2C bus error. Could not clear SCL clock line held low
   }
 
-  uint8_t sda_low = (PINC5  == 0);  // vi. Check SDA input.
+  uint8_t sda_low = (!(PINC & (1<<PC4)));  // vi. Check SDA input.
   uint8_t clockCount = 20; // > 2x9 clock
 
   while (sda_low && (clockCount > 0)) { //  vii. If SDA is Low,
     clockCount--;
   // Note: I2C bus is open collector so do NOT drive SCL or SDA high.
     //pinMode(SCL, INPUT); // release SCL pullup so that when made output it will be LOW
-    DDRC &= ~(1<<DDC4);
-    PORTC &= ~(1<<PC4);
+    DDRC &= ~(1<<DDC5);
+    PORTC &= ~(1<<PC5);
     //pinMode(SCL, OUTPUT); // then clock SCL Low
-    DDRC |= (1<<DDC4);
+    DDRC |= (1<<DDC5);
+    PORTC &= ~(1<<PC5);
     _delay_us(10); //  for >5uS
     //pinMode(SCL, INPUT); // release SCL LOW
-    DDRC &= ~(1<<DDC4);
-    PORTC &= ~(1<<PC4);
+    DDRC &= ~(1<<DDC5);
+    PORTC &= ~(1<<PC5);
     //pinMode(SCL, INPUT_PULLUP); // turn on pullup resistors again
-    DDRC &= ~(1<<DDC4);
-    PORTC |= (1<<PC4);
+    DDRC &= ~(1<<DDC5);
+    PORTC |= (1<<PC5);
     // do not force high as slave may be holding it low for clock stretching.
     _delay_us(10); //  for >5uS
     // The >5uS is so that even the slowest I2C devices are handled.
-    scl_low = (PINC4  == 0); // Check if SCL is Low.
+    scl_low = (!(PINC & (1<<PC5))); // Check if SCL is Low.
     uint8_t counter = 20;
     while (scl_low && (counter > 0)) {  //  loop waiting for SCL to become High only wait 2sec.
       counter--;
       _delay_ms(100);
-      scl_low = (PINC4  == 0);
+      scl_low = (!(PINC & (1<<PC5)));
     }
     if (scl_low) { // still low after 2 sec error
       return 2; // I2C bus error. Could not clear. SCL clock line held low by slave clock stretch for >2sec
     }
-    sda_low = (PINC5  == 0); //   and check SDA input again and loop
+    sda_low = (!(PINC & (1<<PC4))); //   and check SDA input again and loop
   }
   if (sda_low) { // still low
     return 3; // I2C bus error. Could not clear. SDA data line held low
@@ -647,20 +740,59 @@ uint8_t I2C_ClearBus(void){
 
   // else pull SDA line low for Start or Repeated Start
   //pinMode(SDA, INPUT); // remove pullup.
-  PORTC &= ~(1<<PC5);
+  DDRC &= ~(1<<DDC4);
+  PORTC &= ~(1<<PC4);
   //pinMode(SDA, OUTPUT);  // and then make it LOW i.e. send an I2C Start or Repeated start control.
-  DDRC |= (1<<DDC5);
+  DDRC |= (1<<DDC4);
+  PORTC &= ~(1<<PC4);
   // When there is only one I2C master a Start or Repeat Start has the same function as a Stop and clears the bus.
   /// A Repeat Start is a Start occurring after a Start with no intervening Stop.
   _delay_us(10); // wait >5uS
   //pinMode(SDA, INPUT); // remove output low
-  DDRC &= ~(1<<DDC5);
-  //pinMode(SDA, INPUT_PULLUP); // and make SDA high i.e. send I2C STOP control.
-  PORTC |= (1<<PC5);
-  _delay_us(10); // x. wait >5uS
-  //pinMode(SDA, INPUT); // and reset pins as tri-state inputs which is the default state on reset
-  PORTC &= ~(1<<PC5);
-  //pinMode(SCL, INPUT);
   DDRC &= ~(1<<DDC4);
+  PORTC &= ~(1<<PC4);
+  //pinMode(SDA, INPUT_PULLUP); // and make SDA high i.e. send I2C STOP control.
+  DDRC &= ~(1<<DDC4);
+  PORTC |= (1<<PC4);
+  _delay_us(10); // wait >5uS
+  //pinMode(SDA, INPUT); // and reset pins as tri-state inputs which is the default state on reset
+  DDRC &= ~(1<<DDC4);
+  PORTC &= ~(1<<PC4);
+  //pinMode(SCL, INPUT);
+  DDRC &= ~(1<<DDC5);
+  PORTC &= ~(1<<PC5);
   return 0; // all ok
+}
+
+// function to initialize UART
+void uart_init (void){
+  UBRR0H = (BAUDRATE>>8);                      // shift the register right by 8 bits
+  UBRR0L = BAUDRATE;                           // set baud rate
+  UCSR0B|= (1<<TXEN0);                // enable receiver and transmitter
+  UCSR0C|= (1<<UCSZ00)|(1<<UCSZ01)|(1<<USBS0);   // 8bit data format
+}
+
+// function to send data char
+void uart_transmit (uint8_t data){
+//void uart_transmit (uint8_t data, FILE *stream) {
+//  if (data == '\n') {
+//    uart_transmit('\r', stream);
+//  }
+  while (!( UCSR0A & (1<<UDRE0)));                // wait while register is free
+  UDR0 = data;                                   // load data in the register
+}
+
+// function to send data string of char
+void uart_transmit_s(char *s){
+	while(*s){
+		uart_transmit(*s);
+		s++;
+	}
+}
+
+// function to receive data
+uint8_t uart_receive (void){
+//uint8_t uart_receive (FILE *stream) {
+  while(!(UCSR0A) & (1<<RXC0));                   // wait while data is being received
+  return UDR0;                                   // return 8-bit data
 }
