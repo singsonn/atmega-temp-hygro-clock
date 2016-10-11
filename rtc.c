@@ -15,7 +15,7 @@
 
 /*
  * DS1307 register map
- *  
+ *
  *  00h-06h: seconds, minutes, hours, day-of-week, date, month, year (all in BCD)
  *     bit 7 of seconds enables/disables clock
  *     bit 6 of hours toggles 12/24h mode (1 for 12h, 0 for 24h)
@@ -79,7 +79,7 @@
 #define CH_BIT 7 // clock halt bit
 
 // statically allocated structure for time value
-struct tm _tm;
+struct tm_rtc _tm;
 
 uint8_t dec2bcd(uint8_t d)
 {
@@ -120,10 +120,10 @@ void rtc_init(void)
 	// 3) Read back the value
 	//   equal to the one written: DS1307, write back saved value and return
 	//   different from written:   DS3231
-	
+
 	uint8_t temp1 = rtc_read_byte(0x11);
 	uint8_t temp2 = rtc_read_byte(0x12);
-	
+
 	rtc_write_byte(0xee, 0x11);
 	rtc_write_byte(0xdd, 0x12);
 
@@ -146,7 +146,7 @@ bool rtc_is_ds3231(void) { return s_is_ds3231; }
 void rtc_set_ds1307(void) { s_is_ds1307 = true;   s_is_ds3231 = false; }
 void rtc_set_ds3231(void) { s_is_ds1307 = false;  s_is_ds3231 = true;  }
 
-struct tm* rtc_get_time(void)
+struct tm_rtc* rtc_get_time(void)
 {
 	uint8_t rtc[9];
 	uint8_t century = 0;
@@ -201,22 +201,22 @@ void rtc_get_time_s(uint8_t* hour, uint8_t* min, uint8_t* sec)
 	twi_begin_transmission(RTC_ADDR);
 	twi_send_byte(0x0);
 	twi_end_transmission();
-	
+
 	twi_request_from(RTC_ADDR, 7);
-	
+
 	for(uint8_t i=0; i<7; i++) {
 		rtc[i] = twi_receive();
 	}
-	
+
 	twi_end_transmission();
-	
+
 	if (sec)  *sec =  bcd2dec(rtc[0]);
 	if (min)  *min =  bcd2dec(rtc[1]);
 	if (hour) *hour = bcd2dec(rtc[2]);
 }
 
 // fixme: support 12-hour mode for setting time
-void rtc_set_time(struct tm* tm_)
+void rtc_set_time(struct tm_rtc* tm_)
 {
 	twi_begin_transmission(RTC_ADDR);
 	twi_send_byte(0x0);
@@ -251,7 +251,7 @@ void rtc_set_time_s(uint8_t hour, uint8_t min, uint8_t sec)
 	twi_send_byte(dec2bcd(sec)); // seconds
 	twi_send_byte(dec2bcd(min)); // minutes
 	twi_send_byte(dec2bcd(hour)); // hours
-	
+
 	twi_end_transmission();
 }
 
@@ -263,14 +263,14 @@ void rtc_set_time_s(uint8_t hour, uint8_t min, uint8_t sec)
 void rtc_run_clock(bool run)
 {
   if (s_is_ds3231) return;
-  
+
   uint8_t b = rtc_read_byte(0x0);
 
   if (run)
     b &= ~(_BV(CH_BIT)); // clear bit
   else
     b |= _BV(CH_BIT); // set bit
-    
+
     rtc_write_byte(b, 0x0);
 }
 
@@ -280,7 +280,7 @@ void rtc_run_clock(bool run)
 bool rtc_is_clock_running(void)
 {
   if (s_is_ds3231) return true;
-  
+
   uint8_t b = rtc_read_byte(0x0);
 
   if (b & _BV(CH_BIT)) return false;
@@ -290,10 +290,10 @@ bool rtc_is_clock_running(void)
 void ds3231_get_temp_int(int8_t* i, uint8_t* f)
 {
 	uint8_t msb, lsb;
-	
+
 	*i = 0;
 	*f = 0;
-	
+
 	if (s_is_ds1307) return; // only valid on DS3231
 
 	twi_begin_transmission(RTC_ADDR);
@@ -306,7 +306,7 @@ void ds3231_get_temp_int(int8_t* i, uint8_t* f)
 	if (twi_available()) {
 		msb = twi_receive(); // integer part (in twos complement)
 		lsb = twi_receive(); // fraction part
-    	
+
 		// integer part in entire byte
 		*i = msb;
 		// fractional part in top two bits (increments of 0.25)
@@ -338,7 +338,7 @@ void rtc_force_temp_conversion(uint8_t block)
 	twi_end_transmission();
 
 	if (!block) return;
-	
+
 	// Temp conversion is ready when control register becomes 0
 	do {
 		// Block until CONV is 0
@@ -393,7 +393,7 @@ void rtc_SQW_enable(bool enable)
 		twi_begin_transmission(RTC_ADDR);
 		twi_send_byte(0x07);
 		twi_end_transmission();
-		
+
 		// read control
    		twi_request_from(RTC_ADDR, 1);
 		uint8_t control = twi_receive();
@@ -414,7 +414,7 @@ void rtc_SQW_enable(bool enable)
 		twi_begin_transmission(RTC_ADDR);
 		twi_send_byte(0x0E);
 		twi_end_transmission();
-		
+
 		// read control
    		twi_request_from(RTC_ADDR, 1);
 		uint8_t control = twi_receive();
@@ -441,7 +441,7 @@ void rtc_SQW_set_freq(enum RTC_SQW_FREQ freq)
 		twi_begin_transmission(RTC_ADDR);
 		twi_send_byte(0x07);
 		twi_end_transmission();
-		
+
 		// read control (uses bits 0 and 1)
    		twi_request_from(RTC_ADDR, 1);
 		uint8_t control = twi_receive();
@@ -460,7 +460,7 @@ void rtc_SQW_set_freq(enum RTC_SQW_FREQ freq)
 		twi_begin_transmission(RTC_ADDR);
 		twi_send_byte(0x0E);
 		twi_end_transmission();
-		
+
 		// read control (uses bits 3 and 4)
    		twi_request_from(RTC_ADDR, 1);
 		uint8_t control = twi_receive();
@@ -501,7 +501,7 @@ void rtc_osc32kHz_enable(bool enable)
 }
 
 // Alarm functionality
-// fixme: should decide if "alarm disabled" mode should be available, or if alarm should always be enabled 
+// fixme: should decide if "alarm disabled" mode should be available, or if alarm should always be enabled
 // at 00:00:00. Currently, "alarm disabled" only works for ds3231
 void rtc_reset_alarm(void)
 {
@@ -550,7 +550,7 @@ void rtc_set_alarm_s(uint8_t hour, uint8_t min, uint8_t sec)
 	}
 }
 
-void rtc_set_alarm(struct tm* tm_)
+void rtc_set_alarm(struct tm_rtc* tm_)
 {
 	if (!tm_) return;
 	rtc_set_alarm_s(tm_->hour, tm_->min, tm_->sec);
@@ -570,7 +570,7 @@ void rtc_get_alarm_s(uint8_t* hour, uint8_t* min, uint8_t* sec)
 	}
 }
 
-struct tm* rtc_get_alarm(void)
+struct tm_rtc* rtc_get_alarm(void)
 {
 	uint8_t hour, min, sec;
 
@@ -590,7 +590,7 @@ bool rtc_check_alarm(void)
 
 		uint8_t cur_hour, cur_min, cur_sec;
 		rtc_get_time_s(&cur_hour, &cur_min, &cur_sec);
-		
+
 		if (cur_hour == hour && cur_min == min && cur_sec == sec)
 			return true;
 		return false;
@@ -602,7 +602,7 @@ bool rtc_check_alarm(void)
 		// clear flag when set
 		if (val & 1)
 			rtc_write_byte(val & ~0b00000001, 0x0f);
-			
+
 		return val & 1 ? 1 : 0;
 	}
 }

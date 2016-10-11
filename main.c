@@ -3,9 +3,9 @@
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
 #include <util/delay.h>
-#include <stdint.h>
+//#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 #include "DHT22int.h"
 #include "rtc.h"
 #include "twi.h"
@@ -28,6 +28,8 @@ void uart_init (void);
 void uart_transmit (uint8_t data);
 uint8_t uart_receive (void);
 void uart_transmit_s(char *s);
+uint8_t check_dst(void);
+uint8_t set_week_of_month(void);
 
 uint8_t EEMEM dst = 1; // Variable for daylight saving time (0: no we are not in dst, 1: yes we are in dst)
 uint8_t EEMEM region = 0; // Variable for region (0: US/CA, 1:EU)
@@ -88,13 +90,14 @@ volatile uint8_t hour = 0;
 volatile uint8_t minute = 0;
 volatile uint8_t second = 0;
 volatile uint16_t year = 0;
+volatile uint8_t week_of_month = 0;
 
 volatile uint8_t day_one = 14;
 volatile uint8_t day_two = 14;
 volatile uint8_t day_three = 14;
 volatile uint8_t day_four = 14;
 
-volatile struct tm* t = NULL;
+volatile struct tm_rtc* t = NULL;
 
 volatile uint8_t region_val = 0;
 volatile uint8_t dst_val = 0;
@@ -370,8 +373,8 @@ void interrupts_init(void){
 
 void timer_init(void){
   // Timer 1 for single dot toggle
-  TCCR1B |= (1 << CS10) | (1 << CS12) | (1 << WGM12);
-  OCR1A = 7811;
+  TCCR1B |= (1 << CS12) | (1 << WGM12);
+  OCR1A = 31249;
   TIMSK1 |= (1 << OCIE1A);
   TCNT1 = 0; // Initialize Timer 1 counter at 0
 
@@ -645,35 +648,21 @@ void read_rtc(void){
   year_three = year / 10;
   year_four = year % 10;
   day_of_week = t->wday;
+  week_of_month = set_week_of_month();
   time_dp_value_two = 1;
-  if (region_val == 0){ // region = US/CA
-    if (day_of_week == 7 && month == 3 && day >= 7 && day <= 14 && hour == 2 && dst_val == 0){ // Beginning of dst
-      // set RTC clock +1 h
-      hour = hour + 1;
-      rtc_write_byte(dec2bcd(hour), 0x02);
-      dst_val=1;
-      eeprom_update_byte(&dst,dst_val);
-    }
-    if (day_of_week == 7 && month == 11 && day >= 1 && day <= 7 && hour == 2 && dst_val == 1){ // End of dst
-      // set RTC clock -1 h
+  dst_val = eeprom_read_byte(&dst);
+  uint8_t dst_val_temp = check_dst();
+  if (dst_val_temp != dst_val){
+    if (dst_val_temp == 0){
       hour = hour - 1;
       rtc_write_byte(dec2bcd(hour), 0x02);
       dst_val=0;
       eeprom_update_byte(&dst,dst_val);
     }
-  }else { // region = EU
-    if (day_of_week == 7 && month == 3 && day >= 25 && day <= 31 && hour == 2 && dst_val == 0){ // Beginning of dst
-      // set RTC clock +1 h
+    if (dst_val_temp == 1){
       hour = hour + 1;
       rtc_write_byte(dec2bcd(hour), 0x02);
       dst_val=1;
-      eeprom_update_byte(&dst,dst_val);
-    }
-    if (day_of_week == 7 && month == 10 && day >= 25 && day <= 31 && hour == 3 && dst_val == 1){ // End of dst
-      // set RTC clock -1 h
-      hour = hour - 1;
-      rtc_write_byte(dec2bcd(hour), 0x02);
-      dst_val=0;
       eeprom_update_byte(&dst,dst_val);
     }
   }
@@ -795,4 +784,105 @@ uint8_t uart_receive (void){
 //uint8_t uart_receive (FILE *stream) {
   while(!(UCSR0A) & (1<<RXC0));                   // wait while data is being received
   return UDR0;                                   // return 8-bit data
+}
+
+uint8_t check_dst(void){
+  if (region_val == 0){ // region = US/CA
+    if (month > 3 && month < 11){
+      return 1;
+    }
+    if (month < 3){
+      return 0;
+    }
+    if (month > 11){
+      return 0;
+    }
+    if (month == 3){
+      if (week_of_month < 2){
+        return 0;
+      }
+      if (week_of_month > 2){
+        return 1;
+      }
+      if (day_of_week > 7){
+        return 1;
+      }
+      if (hour >= 2){
+        return 1;
+      }
+      return 0;
+    }
+    if (week_of_month > 1){
+      return 0;
+    }
+    if (week_of_month < 1){
+      return 1;
+    }
+    if (day_of_week > 7){
+      return 0;
+    }
+    if (hour >= 1){
+      return 0;
+    }
+    return 1;
+  }else{ // region = EU
+    if (month > 3 && month < 10){
+      return 1;
+    }
+    if (month < 3){
+      return 0;
+    }
+    if (month > 10){
+      return 0;
+    }
+    int8_t n = day - 1;
+    n = n - day_of_week;
+    n = n + 7;
+    uint8_t d = n % 7; // date of first sunday
+    n = 31 - d;
+    n = n / 7; // number of sundays left in the month
+    d = d + 7;
+    d = d * n; // day of final sunday;
+    if (month == 3){
+      if (d < day){
+        return 0;
+      }
+      if (d > day){
+        return 1;
+      }
+      if (hour < 2){
+        return 0;
+      }
+      return 1;
+    }
+    if (d < day){
+      return 1;
+    }
+    if (d > day){
+      return 0;
+    }
+    if (hour < 2){
+      return 1;
+    }
+    return 0;
+  }
+}
+
+uint8_t set_week_of_month(void){
+  uint8_t base = 0; //First day of week is Sunday for US/CA;
+  /* zero base the day of month */
+  int8_t n = day - 1;
+
+  /* find the first base day of the month (start of week 1) */
+  uint8_t f1rst = 7 + n - day_of_week + base;
+  f1rst %= 7;
+
+  /* find days since the first week began */
+  n = n - f1rst;
+
+  /* if negative, we are in week 0 */
+  if (n < 0){
+    return 0;
+  }
+  return n / 7 + 1;
 }

@@ -38,7 +38,7 @@
  * and translation has to be done manually (you can call rtc_24h_to_12h to perform the calculation)
  *
  */
-struct tm {
+struct tm_rtc {
 	int sec;      // 0 to 59
 	int min;      // 0 to 59
 	int hour;     // 0 to 23
@@ -53,7 +53,7 @@ struct tm {
 };
 
 // statically allocated
-extern struct tm _tm;
+extern struct tm_rtc _tm;
 
 // Initialize the RTC and autodetect type (DS1307 or DS3231)
 void rtc_init(void);
@@ -75,11 +75,11 @@ void rtc_set_ds3231(void);
 
 // Get/set time
 // Gets the time: Supports both 24-hour and 12-hour mode
-struct tm* rtc_get_time(void);
+struct tm_rtc* rtc_get_time(void);
 // Gets the time: 24-hour mode only
 void rtc_get_time_s(uint8_t* hour, uint8_t* min, uint8_t* sec);
 // Sets the time: Supports both 24-hour and 12-hour mode
-void rtc_set_time(struct tm* tm_);
+void rtc_set_time(struct tm_rtc* tm_);
 // Sets the time: Supports 12-hour mode only
 void rtc_set_time_s(uint8_t hour, uint8_t min, uint8_t sec);
 
@@ -106,9 +106,9 @@ void rtc_osc32kHz_enable(bool enable);
 
 // Alarm functionality
 void rtc_reset_alarm(void);
-void rtc_set_alarm(struct tm* tm_);
+void rtc_set_alarm(struct tm_rtc* tm_);
 void rtc_set_alarm_s(uint8_t hour, uint8_t min, uint8_t sec);
-struct tm* rtc_get_alarm(void);
+struct tm_rtc* rtc_get_alarm(void);
 void rtc_get_alarm_s(uint8_t* hour, uint8_t* min, uint8_t* sec);
 bool rtc_check_alarm(void);
 
