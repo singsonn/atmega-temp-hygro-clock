@@ -757,7 +757,8 @@ uint8_t I2C_ClearBus(void){
 void uart_init (void){
   UBRR0H = (BAUDRATE>>8);                      // shift the register right by 8 bits
   UBRR0L = BAUDRATE;                           // set baud rate
-  UCSR0B|= (1<<TXEN0);                // enable receiver and transmitter
+  UCSR0B|= (1<<TXEN0);                // enable transmitter
+//  UCSR0B|= (1<<RXEN0);                // enable receiver
   UCSR0C|= (1<<UCSZ00)|(1<<UCSZ01)|(1<<USBS0);   // 8bit data format
 }
 
