@@ -524,7 +524,7 @@ void value_displayed_func(void){
       uart_transmit_s(".");
       sprintf(str, "%d", humidity_val2);
       uart_transmit_s(str);
-      uart_transmit_s("%\r");
+      uart_transmit_s(" %\r");
     }
     dht_reading = 1;
     if (dht_reading >= 1){
@@ -544,12 +544,21 @@ void value_displayed_func(void){
     uart_transmit_s("Time: ");
     char str[3];
     sprintf(str, "%d", hour);
+    if (hour < 10){
+      uart_transmit_s("0");
+    }
     uart_transmit_s(str);
     uart_transmit_s(":");
     sprintf(str, "%d", minute);
+    if (minute < 10){
+      uart_transmit_s("0");
+    }
     uart_transmit_s(str);
     uart_transmit_s(":");
     sprintf(str, "%d", second);
+    if (second < 10){
+      uart_transmit_s("0");
+    }
     uart_transmit_s(str);
     uart_transmit_s("\r");
 //    dp_value_four = 0;
@@ -567,12 +576,21 @@ void value_displayed_func(void){
     uart_transmit_s("Date: ");
     char str[3];
     sprintf(str, "%d", day);
+    if (day < 10){
+      uart_transmit_s("0");
+    }
     uart_transmit_s(str);
     uart_transmit_s(".");
     sprintf(str, "%d", month);
+    if (month < 10){
+      uart_transmit_s("0");
+    }
     uart_transmit_s(str);
     uart_transmit_s(".20");
     sprintf(str, "%d", year);
+    if (year < 10){
+      uart_transmit_s("0");
+    }
     uart_transmit_s(str);
     uart_transmit_s("\r");
     _delay_ms(100);
@@ -590,12 +608,21 @@ void value_displayed_func(void){
       uart_transmit_s("Date: ");
       char str[3];
       sprintf(str, "%d", day);
+      if (day < 10){
+        uart_transmit_s("0");
+      }
       uart_transmit_s(str);
       uart_transmit_s(".");
       sprintf(str, "%d", month);
+      if (month < 10){
+        uart_transmit_s("0");
+      }
       uart_transmit_s(str);
       uart_transmit_s(".20");
       sprintf(str, "%d", year);
+      if (year < 10){
+        uart_transmit_s("0");
+      }
       uart_transmit_s(str);
       uart_transmit_s("\r");
     }
@@ -805,8 +832,8 @@ uint8_t check_dst(void){
       if (week_of_month > 2){
         return 1;
       }
-      if (day_of_week > 7){
-        return 1;
+      if (day_of_week < 7){
+        return 0;
       }
       if (hour >= 2){
         return 1;
@@ -819,8 +846,8 @@ uint8_t check_dst(void){
     if (week_of_month < 1){
       return 1;
     }
-    if (day_of_week > 7){
-      return 0;
+    if (day_of_week < 7){
+      return 1;
     }
     if (hour >= 1){
       return 0;
