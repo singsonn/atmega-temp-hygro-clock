@@ -146,6 +146,7 @@ int main(void) { // main program
   uart_transmit_s("Atmega328P Clock\n\r");
   uart_transmit_s("DS321 + DHT22 initialized\n\r");
   uart_transmit_s("Author: Axel Caspard - axel@singsonn.com - axelcaspard.com\n\r");
+  uart_transmit_s("- - -\n\r");
 
   sei(); // Enable global interrupts
 
@@ -562,7 +563,7 @@ void value_displayed_func(void){
     uart_transmit_s(str);
     uart_transmit_s("\r");
 //    dp_value_four = 0;
-    _delay_ms(5);
+    _delay_ms(10);
   }else if (value_displayed == 3){ // Display date (day.month)
     read_rtc();
     one = day_one;
@@ -866,7 +867,7 @@ uint8_t check_dst(void){
     int8_t n = day - 1;
     n = n - day_of_week;
     n = n + 7;
-    uint8_t d = n % 7; // date of first sunday
+    int8_t d = n % 7; // date of first sunday
     n = 31 - d;
     n = n / 7; // number of sundays left in the month
     d = d + 7;
@@ -902,7 +903,7 @@ uint8_t set_week_of_month(void){
   int8_t n = day - 1;
 
   /* find the first base day of the month (start of week 1) */
-  uint8_t f1rst = 7 + n - day_of_week + base;
+  int8_t f1rst = 7 + n - day_of_week + base;
   f1rst %= 7;
 
   /* find days since the first week began */
