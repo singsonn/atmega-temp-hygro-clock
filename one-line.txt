@@ -1,0 +1,5 @@
+avr-gcc -g -Os -mmcu=atmega328p -c *.c && \
+  avr-gcc -g -mmcu=atmega328p -o main.elf *.o && \
+  avr-objcopy -j .text -j .data -O ihex main.elf main.hex && \
+  avr-objcopy -j .eeprom --change-section-lma .eeprom=0 -O ihex main.elf main_eeprom.hex && \
+  avrdude -p m328p -c usbasp-clone -U flash:w:main.hex -U eeprom:w:main_eeprom.hex

@@ -1,0 +1,84 @@
+https://www.tutorialspoint.com/compile_c_online.php
+int main()
+{
+  int day_of_week = 7;
+  int day = 6;
+  int base = 0; //First day of week is Sunday for US/CA;
+  /* zero base the day of month */
+  int n = day - 1;
+
+  /* find the first base day of the month (start of week 1) */
+  int f1rst = 7 + n - day_of_week + base;
+  f1rst %= 7;
+
+  /* find days since the first week began */
+  n = n - f1rst;
+
+  /* if negative, we are in week 0 */
+  if (n < 0){
+    printf("res is %i\n",n);
+    printf("Result is week = 0\n");
+    return 0;
+  }
+  n = n / 7 + 1;
+    printf("Result is %i\n",n);
+    return n;
+}
+
+
+EU :
+
+int month = 10;
+int day = 30;
+int hour = 1;
+int day_of_week = 7;
+int mday = day - 1;
+
+  if (month > 3 && month < 10){
+  printf("Result is 0\n");
+      return 1;
+    }
+    if (month < 3){
+      printf("Result is 1\n");
+      return 0;
+    }
+    if (month > 10){
+    printf("Result is 2\n");
+      return 0;
+    }
+    int n = day - 1;
+    n -= day_of_week;
+    n += 7;
+    int d = n % 7; // date of first sunday
+    n = 31 - d;
+    n /= 7; // number of sundays left in the month
+    d = d + 7 * n; // day of final sunday;
+    if (month == 3){
+      if (d < mday){
+      printf("Result is 3\n");
+        return 0;
+      }
+      if (d > mday){
+        printf("Result is 4\n");
+        return 1;
+      }
+      if (hour < 2){
+        return 0;
+      }
+        printf("Result is 5\n");
+      return 1;
+    }
+    if (d < mday){
+      printf("Result is 6\n");
+      return 1;
+    }
+    if (d > mday){
+    printf("Result is 7\n");
+      return 0;
+    }
+    if (hour < 2){
+      printf("Result is 8\n");
+      return 1;
+    }
+    printf("Result is 9\n");
+    return 0;
