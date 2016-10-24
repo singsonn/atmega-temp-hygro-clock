@@ -33,8 +33,11 @@ uint8_t set_week_of_month(void);
 
 uint8_t EEMEM dst = 1; // Variable for daylight saving time (0: no we are not in dst, 1: yes we are in dst)
 uint8_t EEMEM region = 0; // Variable for region (0: US/CA, 1:EU)
-uint8_t EEMEM value_displayed_mem = 0; // Variable for saving value displayed
+uint8_t EEMEM year_reg = 16;
+uint8_t EEMEM hour_minus_1 = 0;
+uint8_t EEMEM hour_plus_1 = 1
 
+uint8_t EEMEM value_displayed_mem = 0; // Variable for saving value displayed
 
 volatile uint8_t toggle = 0;
 volatile uint8_t dht_reading = 0;
@@ -101,6 +104,9 @@ volatile struct tm_rtc* t = NULL;
 
 volatile uint8_t region_val = 0;
 volatile uint8_t dst_val = 0;
+volatile uint8_t year_reg_val = 0;
+volatile uint8_t hour_minus_1_val = 0;
+volatile uint8_t hour_plus_1_val = 0;
 
 //c = 10;
 //h = 11;
@@ -120,6 +126,9 @@ int main(void) { // main program
   region_val = eeprom_read_byte(&region);
   dst_val = eeprom_read_byte(&dst);
   value_displayed = eeprom_read_byte(&value_displayed_mem);
+  year_reg_val = eeprom_read_byte(&year_reg);
+  hour_minus_1_val = eeprom_read_byte(&hour_minus_1);
+  hour_plus_1_val = eeprom_read_byte(&hour_plus_1);
 
   uint8_t rtn = I2C_ClearBus(); // clear the I2C bus first before calling Wire.begin()
     if (rtn != 0) {
@@ -678,20 +687,32 @@ void read_rtc(void){
   day_of_week = t->wday;
   week_of_month = set_week_of_month();
   time_dp_value_two = 1;
+  year_reg_val = eeprom_read_byte(&year_reg);
+  if (year != year_reg_val){
+    eeprom_update_byte(&year_reg,year);
+    hour_minus_1_val = 0;
+    hour_plus_1_val = 0;
+    eeprom_update_byte(&hour_minus_1,hour_minus_1_val);
+    eeprom_update_byte(&hour_plus_1,hour_plus_1_val);
+  }
   dst_val = eeprom_read_byte(&dst);
   uint8_t dst_val_temp = check_dst();
   if (dst_val_temp != dst_val){
-    if (dst_val_temp == 0){
+    if (dst_val_temp == 0 && hour_minus_1_val == 0){
       hour = hour - 1;
       rtc_write_byte(dec2bcd(hour), 0x02);
       dst_val=0;
+      hour_minus_1_val = 1;
       eeprom_update_byte(&dst,dst_val);
+      eeprom_update_byte(&hour_minus_1,hour_minus_1_val);
     }
-    if (dst_val_temp == 1){
+    if (dst_val_temp == 1 && hour_plus_1_val == 0){
       hour = hour + 1;
       rtc_write_byte(dec2bcd(hour), 0x02);
       dst_val=1;
+      hour_plus_1_val = 1;
       eeprom_update_byte(&dst,dst_val);
+      eeprom_update_byte(&hour_plus_1,hour_plus_1_val);
     }
   }
 }
@@ -855,6 +876,7 @@ uint8_t check_dst(void){
     }
     return 1;
   }else{ // region = EU
+    int8_t mday = day - 1;
     if (month > 3 && month < 10){
       return 1;
     }
@@ -865,18 +887,17 @@ uint8_t check_dst(void){
       return 0;
     }
     int8_t n = day - 1;
-    n = n - day_of_week;
-    n = n + 7;
-    int8_t d = n % 7; // date of first sunday
+    n -= day_of_week;
+    n += 7;
+    uint8_t d = n % 7; // date of first sunday
     n = 31 - d;
-    n = n / 7; // number of sundays left in the month
-    d = d + 7;
-    d = d * n; // day of final sunday;
+    n /= 7; // number of sundays left in the month
+    d = d + 7 * n; // day of final sunday;
     if (month == 3){
-      if (d < day){
+      if (d < mday){
         return 0;
       }
-      if (d > day){
+      if (d > mday){
         return 1;
       }
       if (hour < 2){
@@ -884,10 +905,10 @@ uint8_t check_dst(void){
       }
       return 1;
     }
-    if (d < day){
+    if (d < mday){
       return 1;
     }
-    if (d > day){
+    if (d > mday){
       return 0;
     }
     if (hour < 2){
