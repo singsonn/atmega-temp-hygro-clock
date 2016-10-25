@@ -35,7 +35,7 @@ uint8_t EEMEM dst = 1; // Variable for daylight saving time (0: no we are not in
 uint8_t EEMEM region = 0; // Variable for region (0: US/CA, 1:EU)
 uint8_t EEMEM year_reg = 16;
 uint8_t EEMEM hour_minus_1 = 0;
-uint8_t EEMEM hour_plus_1 = 1
+uint8_t EEMEM hour_plus_1 = 1;
 
 uint8_t EEMEM value_displayed_mem = 0; // Variable for saving value displayed
 
