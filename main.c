@@ -688,7 +688,7 @@ void read_rtc(void){
   week_of_month = set_week_of_month();
   time_dp_value_two = 1;
   year_reg_val = eeprom_read_byte(&year_reg);
-  if (year != year_reg_val){
+/*  if (year != year_reg_val){
     eeprom_update_byte(&year_reg,year);
     hour_minus_1_val = 0;
     hour_plus_1_val = 0;
@@ -714,7 +714,7 @@ void read_rtc(void){
       eeprom_update_byte(&dst,dst_val);
       eeprom_update_byte(&hour_plus_1,hour_plus_1_val);
     }
-  }
+  }*/
 }
 
 uint8_t I2C_ClearBus(void){
