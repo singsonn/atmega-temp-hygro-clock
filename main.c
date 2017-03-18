@@ -31,11 +31,11 @@ void uart_transmit_s(char *s);
 uint8_t check_dst(void);
 uint8_t set_week_of_month(void);
 
-uint8_t EEMEM dst = 1; // Variable for daylight saving time (0: no we are not in dst, 1: yes we are in dst)
-uint8_t EEMEM region = 0; // Variable for region (0: US/CA, 1:EU)
-uint8_t EEMEM year_reg = 16;
-uint8_t EEMEM hour_minus_1 = 0;
-uint8_t EEMEM hour_plus_1 = 1;
+//uint8_t EEMEM dst = 1; // Variable for daylight saving time (0: no we are not in dst, 1: yes we are in dst)
+//uint8_t EEMEM region = 0; // Variable for region (0: US/CA, 1:EU)
+//uint8_t EEMEM year_reg = 16;
+//uint8_t EEMEM hour_minus_1 = 0;
+//uint8_t EEMEM hour_plus_1 = 1;
 
 uint8_t EEMEM value_displayed_mem = 0; // Variable for saving value displayed
 
@@ -102,11 +102,11 @@ volatile uint8_t day_four = 14;
 
 volatile struct tm_rtc* t = NULL;
 
-volatile uint8_t region_val = 0;
-volatile uint8_t dst_val = 0;
-volatile uint8_t year_reg_val = 0;
-volatile uint8_t hour_minus_1_val = 0;
-volatile uint8_t hour_plus_1_val = 0;
+//volatile uint8_t region_val = 0;
+//volatile uint8_t dst_val = 0;
+//volatile uint8_t year_reg_val = 0;
+//volatile uint8_t hour_minus_1_val = 0;
+//volatile uint8_t hour_plus_1_val = 0;
 
 //c = 10;
 //h = 11;
@@ -123,12 +123,12 @@ int main(void) { // main program
   timer_init();
   uart_init();
 
-  region_val = eeprom_read_byte(&region);
-  dst_val = eeprom_read_byte(&dst);
+  //region_val = eeprom_read_byte(&region);
+  //dst_val = eeprom_read_byte(&dst);
   value_displayed = eeprom_read_byte(&value_displayed_mem);
-  year_reg_val = eeprom_read_byte(&year_reg);
-  hour_minus_1_val = eeprom_read_byte(&hour_minus_1);
-  hour_plus_1_val = eeprom_read_byte(&hour_plus_1);
+  //year_reg_val = eeprom_read_byte(&year_reg);
+  //hour_minus_1_val = eeprom_read_byte(&hour_minus_1);
+  //hour_plus_1_val = eeprom_read_byte(&hour_plus_1);
 
   uint8_t rtn = I2C_ClearBus(); // clear the I2C bus first before calling Wire.begin()
     if (rtn != 0) {
@@ -685,9 +685,9 @@ void read_rtc(void){
   year_three = year / 10;
   year_four = year % 10;
   day_of_week = t->wday;
-  week_of_month = set_week_of_month();
+//  week_of_month = set_week_of_month();
   time_dp_value_two = 1;
-  year_reg_val = eeprom_read_byte(&year_reg);
+//  year_reg_val = eeprom_read_byte(&year_reg);
 /*  if (year != year_reg_val){
     eeprom_update_byte(&year_reg,year);
     hour_minus_1_val = 0;
@@ -836,7 +836,7 @@ uint8_t uart_receive (void){
   return UDR0;                                   // return 8-bit data
 }
 
-uint8_t check_dst(void){
+/*uint8_t check_dst(void){
   if (region_val == 0){ // region = US/CA
     if (month > 3 && month < 11){
       return 1;
@@ -916,23 +916,23 @@ uint8_t check_dst(void){
     }
     return 0;
   }
-}
+}*/
 
-uint8_t set_week_of_month(void){
-  uint8_t base = 0; //First day of week is Sunday for US/CA;
+//uint8_t set_week_of_month(void){
+//  uint8_t base = 0; //First day of week is Sunday for US/CA;
   /* zero base the day of month */
-  int8_t n = day - 1;
+//  int8_t n = day - 1;
 
   /* find the first base day of the month (start of week 1) */
-  int8_t f1rst = 7 + n - day_of_week + base;
-  f1rst %= 7;
+//  int8_t f1rst = 7 + n - day_of_week + base;
+//  f1rst %= 7;
 
   /* find days since the first week began */
-  n = n - f1rst;
+//  n = n - f1rst;
 
   /* if negative, we are in week 0 */
-  if (n < 0){
-    return 0;
-  }
-  return n / 7 + 1;
-}
+//  if (n < 0){
+//    return 0;
+//  }
+//  return n / 7 + 1;
+//}
